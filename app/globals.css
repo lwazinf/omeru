@@ -1,12 +1,37 @@
 @import "tailwindcss";
 
+html {
+  scroll-behavior: smooth;
+}
+
 :root {
+  /* Primary palette */
   --beige: #E4CBA5;
+  --beige-light: #F2E8DD;
+  --beige-ultra-light: #FAF6F1;
   --dark-green: #00452E;
+  --dark-green-light: #0A6344;
+  --dark-green-ultra-light: #E7F2EE;
   --black: #050E09;
   
-  --background: #ffffff;
+  /* Background and text */
+  --background: var(--beige-ultra-light);
   --foreground: var(--black);
+  --text-muted: #666;
+  
+  /* Accents */
+  --accent-1: #FBF7EF;
+  --accent-2: #F0F8F5;
+  
+  /* AI-specific theme colors */
+  --ai-highlight: rgba(0, 69, 46, 0.6);
+  --ai-glow: rgba(228, 203, 165, 0.8);
+  --terminal-bg: rgba(5, 14, 9, 0.9);
+  --terminal-text: #E4CBA5;
+  --data-flow: rgba(10, 99, 68, 0.7);
+  --foreground-rgb: 255, 255, 255;
+  --background-start-rgb: 17, 17, 17;
+  --background-end-rgb: 17, 17, 17;
 }
 
 @theme inline {
@@ -27,11 +52,363 @@
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: linear-gradient(
+      to bottom,
+      transparent,
+      rgb(var(--background-end-rgb))
+    )
+    rgb(var(--background-start-rgb));
+  color: rgb(var(--foreground-rgb));
   font-family: var(--font-sans), system-ui, sans-serif;
+  position: relative;
+  min-height: 100vh;
+  scroll-behavior: smooth;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: 
+    radial-gradient(circle at 15% 15%, var(--beige-light)/8% 0%, transparent 35%),
+    radial-gradient(circle at 85% 85%, var(--dark-green-ultra-light) 0%, transparent 40%);
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* AI-inspired circuit pattern overlay */
+body::after {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg stroke='%2300452E' stroke-width='0.5' stroke-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3Cpath d='M0 0h60v60H0z' stroke-width='0'/%3E%3Cpath d='M0 0v60M15 0v60M30 0v60M45 0v60M60 0v60M0 0h60M0 15h60M0 30h60M0 45h60M0 60h60' stroke-opacity='0.05'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  opacity: 0.3;
+  pointer-events: none;
+  z-index: -1;
 }
 
 .font-display {
-  font-family: var(--font-display), system-ui, sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  letter-spacing: -0.025em;
+}
+
+/* Elegant section styling */
+section {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Subtle pattern overlay for sections */
+.pattern-overlay::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23004529' fill-opacity='0.02'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  opacity: 0.3;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Enhanced card styling with AI aesthetic */
+.card {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(228, 203, 165, 0.2);
+  box-shadow: 
+    0 4px 16px rgba(0, 0, 0, 0.03),
+    0 1px 3px rgba(0, 69, 46, 0.05);
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 
+    0 10px 30px rgba(0, 0, 0, 0.05),
+    0 1px 3px rgba(0, 69, 46, 0.1);
+  border: 1px solid rgba(228, 203, 165, 0.4);
+}
+
+/* AI card highlight effect */
+.card::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 30%;
+  height: 1px;
+  background: linear-gradient(to right, rgba(0, 69, 46, 0), rgba(0, 69, 46, 0.6), rgba(0, 69, 46, 0));
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.card:hover::after {
+  opacity: 1;
+}
+
+/* Terminal-inspired elements */
+.terminal {
+  background: var(--terminal-bg);
+  color: var(--terminal-text);
+  border-radius: 6px;
+  font-family: monospace;
+  padding: 16px;
+  border: 1px solid rgba(228, 203, 165, 0.3);
+  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.terminal::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(to right, var(--dark-green), var(--beige), var(--dark-green));
+  opacity: 0.7;
+}
+
+/* Data flow effect */
+.data-flow {
+  position: absolute;
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--data-flow), transparent);
+  animation: dataFlow 8s linear infinite;
+}
+
+@keyframes dataFlow {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+/* Glowing text effect for AI elements */
+.ai-glow {
+  text-shadow: 0 0 8px var(--ai-glow);
+  color: var(--dark-green);
+}
+
+/* Pulse animation for AI elements */
+@keyframes ai-pulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+.ai-pulse {
+  animation: ai-pulse 2s infinite;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Gradient text */
+.gradient-text {
+  background: linear-gradient(135deg, var(--dark-green) 0%, var(--dark-green-light) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-fill-color: transparent;
+  color: var(--dark-green);
+}
+
+/* Soft section dividers */
+.section-divider {
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--beige) 50%, transparent 100%);
+  opacity: 0.5;
+  margin: 3rem 0;
+}
+
+/* Elegant inputs with subtle borders */
+input, textarea, select {
+  border-color: var(--beige-light) !important;
+  transition: all 0.3s ease;
+}
+
+input:focus, textarea:focus, select:focus {
+  border-color: var(--dark-green-light) !important;
+  box-shadow: 0 0 0 3px var(--dark-green-ultra-light) !important;
+}
+
+/* AI-inspired button style */
+.btn-ai {
+  position: relative;
+  background: var(--dark-green);
+  color: white;
+  font-family: monospace;
+  border: none;
+  border-radius: 4px;
+  padding: 8px 16px;
+  overflow: hidden;
+}
+
+.btn-ai::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: left 0.7s;
+}
+
+.btn-ai:hover::before {
+  left: 100%;
+}
+
+/* Code snippet styling */
+.code-snippet {
+  background: rgba(5, 14, 9, 0.05);
+  padding: 16px;
+  border-radius: 6px;
+  font-family: monospace;
+  border-left: 3px solid var(--dark-green);
+  overflow-x: auto;
+}
+
+.code-line {
+  display: block;
+  padding: 2px 0;
+}
+
+.code-comment {
+  color: var(--dark-green-light);
+  opacity: 0.7;
+}
+
+/* Data visualization elements */
+.data-point {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--dark-green);
+  display: inline-block;
+  margin: 0 2px;
+}
+
+.data-bar {
+  height: 20px;
+  background: linear-gradient(to right, var(--beige-light), var(--dark-green-light));
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+/* AI Module Card */
+.ai-module {
+  border: 1px solid rgba(228, 203, 165, 0.3);
+  border-radius: 8px;
+  padding: 16px;
+  background: white;
+  position: relative;
+  overflow: hidden;
+}
+
+.ai-module::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 4px;
+  background: linear-gradient(to right, var(--dark-green), var(--beige));
+}
+
+.ai-module-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 12px;
+  font-family: monospace;
+}
+
+.ai-module-indicator {
+  width: 8px;
+  height: 8px;
+  background-color: var(--dark-green);
+  border-radius: 50%;
+  margin-right: 8px;
+  animation: ai-pulse 2s infinite;
+}
+
+/* Neural network connections effect */
+.neural-connections {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0.1;
+}
+
+.neural-node {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background-color: var(--dark-green);
+  border-radius: 50%;
+}
+
+.neural-line {
+  position: absolute;
+  height: 1px;
+  background-color: var(--dark-green);
+  transform-origin: 0 0;
+}
+
+/* Prevent blue highlight on mobile when clicking buttons */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Typography */
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+/* Card hover effect */
+.card-hover {
+  transition: all 0.3s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px -10px rgba(0, 0, 0, 0.2);
+}
+
+/* Focus styles */
+*:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
 }
