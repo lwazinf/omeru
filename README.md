@@ -1,36 +1,81 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Omeru Digital - AI Platform
+
+A modern Next.js application showcasing an AI platform similar to stability.ai, built with TypeScript, Tailwind CSS, and state management with Jotai.
+
+## Features
+
+- 📱 Fully responsive design that works on all devices
+- 🎨 Beautiful UI with Tailwind CSS
+- 🔄 State management with Jotai
+- 🧩 Component-based architecture
+- 📱 Mobile-friendly navigation with dropdown menus
+- 📝 Contact form with validation
+- 🔗 Social media integration
+
+## Tech Stack
+
+- **Framework**: Next.js 15
+- **Language**: TypeScript
+- **Styling**: Tailwind CSS
+- **State Management**: Jotai
+- **Icons**: FontAwesome
+- **Animation** (prepared for future use): GSAP and Framer Motion
+- **Fonts**: Roboto and Roboto Condensed
+
+## Structure
+
+- **`app/`**: Main application code
+  - **`components/`**: Reusable UI components
+    - **`layout/`**: Layout components (Navbar, Footer)
+    - **`sections/`**: Page section components (Hero, FeaturedModel, Contact)
+    - **`ui/`**: Reusable UI elements
+  - **`store/`**: Jotai atoms and state management
+  - **`lib/`**: Utility functions and helpers
+  - **`page.tsx`**: Main page component
+
+## Color Scheme
+
+- **Beige**: #E4CBA5
+- **Dark Green**: #00452E
+- **Black**: #050E09
 
 ## Getting Started
 
-First, run the development server:
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   yarn install
+   ```
+3. Run the development server:
+   ```bash
+   yarn dev
+   ```
+4. Open [http://localhost:3000](http://localhost:3000) in your browser
+
+## Deployment
+
+This application can be easily deployed to Vercel with zero configuration:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+vercel
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Screenshots
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+(Placeholder for screenshots)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Future Enhancements
 
-## Learn More
+- Dynamic content loading for model tabs
+- Animation effects using GSAP and Framer Motion
+- Backend API integration
+- Authentication and user profiles
+- Theme customization options
 
-To learn more about Next.js, take a look at the following resources:
+## License
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+MIT
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Credits
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Created by [Your Name]
