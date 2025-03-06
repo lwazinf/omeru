@@ -9,14 +9,14 @@ const Header = () => {
     <header className="fixed top-0 left-0 right-0 z-50 py-4 px-6 md:px-12 bg-[#111111]/90 backdrop-blur-sm border-b border-white/5">
       <div className="max-w-7xl mx-auto flex justify-between items-center">
         <Link href="/" className="flex items-center">
-          <div className="w-8 h-8 rounded-sm bg-white/10 flex items-center justify-center mr-2">
-            <span className="text-white text-xs font-medium">O</span>
+          <div className="w-8 h-8 rounded-sm bg-white/10 flex items-center justify-center mr-2 overflow-hidden">
+            <img src="/LwaziNF.png" alt="Omeru Digital" className="w-5 h-5" />
           </div>
           <span className="text-white text-sm">omeru digital</span>
         </Link>
         
         <nav className="hidden md:flex items-center space-x-8">
-          <NavLink href="/#featured-model">Services</NavLink>
+          <NavLink href="/#services">Services</NavLink>
           <NavLink href="/work">Work</NavLink>
           <NavLink href="/about">About</NavLink>
           <NavLink href="/#contact">Contact</NavLink>

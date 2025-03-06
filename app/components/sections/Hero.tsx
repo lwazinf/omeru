@@ -1,9 +1,8 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import AnimatedElement from '../ui/AnimatedElement';
-import Button from '../ui/Button';
+import { motion } from 'framer-motion';
+import styles from './hero.module.css';
 
 // Service categories with subcategories
 const serviceCategories = {
@@ -104,6 +103,9 @@ const omeruPersonalities = {
 };
 
 const Hero = () => {
+  // State for theme
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  
   const [activeTab, setActiveTab] = useState<string>('web_development');
   
   // Chat state
@@ -116,6 +118,42 @@ const Hero = () => {
   const [aiReady, setAiReady] = useState(false);
   
   const chatEndRef = useRef<HTMLDivElement>(null);
+  
+  // Add new state for tracking current question
+  const [currentQuestion, setCurrentQuestion] = useState<string>("");
+  // Add ref for horizontal scrolling container
+  const optionsScrollRef = useRef<HTMLDivElement>(null);
+  // Add state to detect if on mobile
+  const [isMobile, setIsMobile] = useState<boolean>(false);
+  
+  // Detect if on mobile device
+  useEffect(() => {
+    const checkIfMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    // Set initial value
+    checkIfMobile();
+    
+    // Add event listener for window resize
+    window.addEventListener('resize', checkIfMobile);
+    
+    // Clean up
+    return () => window.removeEventListener('resize', checkIfMobile);
+  }, []);
+  
+  // Theme toggle function
+  const toggleTheme = () => {
+    setTheme(prevTheme => prevTheme === 'dark' ? 'light' : 'dark');
+  };
+  
+  // Effect to sync theme with body class
+  useEffect(() => {
+    if (typeof document !== 'undefined') {
+      document.body.classList.remove('theme-dark', 'theme-light');
+      document.body.classList.add(`theme-${theme}`);
+    }
+  }, [theme]);
   
   // Dynamic options based on conversation stage
   const getOptions = () => {
@@ -192,11 +230,15 @@ const Hero = () => {
       Math.floor(Math.random() * omeruPersonalities[omeruPersonality].greetings.length)
     ];
     
+    // Set the current question for mobile display
+    const question = "What service are you interested in exploring today?";
+    setCurrentQuestion(question);
+    
     // Simulate typing effect for AI message
     setTimeout(() => {
       setConversation([{ 
         from: 'ai', 
-        text: greeting + " What service are you interested in exploring today?"
+        text: greeting + " " + question
       }]);
       setIsTyping(false);
       setTimeout(() => {
@@ -248,69 +290,75 @@ const Hero = () => {
     }
   };
   
-  // Process service category selection
+  // Modify processServiceSelection to update current question
   const processServiceSelection = (value: string, label: string) => {
-    setIsTyping(true);
-    
-    // Choose a random response from personality type
+    // Get a response from the current personality
     const response = omeruPersonalities[omeruPersonality].responses[
       Math.floor(Math.random() * omeruPersonalities[omeruPersonality].responses.length)
     ];
     
+    const question = `What type of ${label.toLowerCase()} are you looking for?`;
+    setCurrentQuestion(question);
+    
+    // Simulate AI response
+    setIsTyping(true);
     setTimeout(() => {
       setConversation(prev => [...prev, { 
         from: 'ai', 
-        text: `${response} What specific ${label.toLowerCase()} service are you looking for?` 
+        text: `${response} ${question}`
       }]);
       setIsTyping(false);
       setTimeout(() => {
         setShowOptions(true);
         setCurrentStage('service_selection');
       }, 500);
-    }, 1000);
+    }, 1500);
   };
   
-  // Process sub-service selection
+  // Modify processSubServiceSelection to update current question
   const processSubServiceSelection = (value: string, label: string) => {
-    setIsTyping(true);
+    // Get a response from the current personality
+    const response = omeruPersonalities[omeruPersonality].responses[
+      Math.floor(Math.random() * omeruPersonalities[omeruPersonality].responses.length)
+    ];
     
+    // Include the selected option in the question for context
+    const question = `Can you tell me a bit more about your ${label} project requirements?`;
+    setCurrentQuestion(question);
+    
+    // Simulate AI response
+    setIsTyping(true);
     setTimeout(() => {
       setConversation(prev => [...prev, { 
         from: 'ai', 
-        text: `Great choice! ${label} is one of our specialties. Our team has extensive experience delivering customized solutions in this area that help businesses streamline operations and achieve their goals.` 
+        text: `${response} ${question}`
       }]);
-      
-      // Wait a bit, then follow up with a question
+      setIsTyping(false);
       setTimeout(() => {
-        setConversation(prev => [...prev, { 
-          from: 'ai', 
-          text: omeruPersonalities[omeruPersonality].bookingPrompt 
-        }]);
-        setIsTyping(false);
-        setTimeout(() => {
-          setShowOptions(true);
-          setCurrentStage('project_details');
-        }, 500);
-      }, 1500);
-    }, 1200);
+        setShowOptions(true);
+        setCurrentStage('project_details');
+      }, 500);
+    }, 1500);
   };
   
-  // Process project details and move to booking
+  // Modify processProjectDetails to update current question
   const processProjectDetails = (value: string) => {
-    setIsTyping(true);
-    
     if (value === 'proceed_to_booking') {
+      const bookingPrompt = omeruPersonalities[omeruPersonality].bookingPrompt;
+      setCurrentQuestion(bookingPrompt);
+      
+      setIsTyping(true);
       setTimeout(() => {
         setConversation(prev => [...prev, { 
           from: 'ai', 
-          text: 'Excellent! Please select a time that works for you, and our team will be prepared to discuss your project in detail.' 
+          text: bookingPrompt
         }]);
         setIsTyping(false);
         setTimeout(() => {
           setShowOptions(true);
           setCurrentStage('booking');
         }, 500);
-      }, 1000);
+      }, 1500);
     } else if (value === 'ask_questions') {
       setTimeout(() => {
         setConversation(prev => [...prev, { 
@@ -338,105 +386,267 @@ const Hero = () => {
     }
   };
   
-  // Process booking selection
+  // Modify processBookingSelection to update current question
   const processBookingSelection = (value: string, label: string) => {
-    setIsTyping(true);
+    const confirmationMessage = `Great! I've scheduled your consultation for ${label}. You'll receive a confirmation email shortly with details and a calendar invite.`;
+    setCurrentQuestion("Would you like to explore other services or contact our team directly?");
     
+    setIsTyping(true);
     setTimeout(() => {
       setConversation(prev => [...prev, { 
         from: 'ai', 
-        text: `Perfect! Your consultation is confirmed for ${label}. You'll receive a calendar invitation and confirmation email shortly with all the details. Our team is looking forward to meeting with you!` 
+        text: confirmationMessage
       }]);
       setIsTyping(false);
       setTimeout(() => {
-        setConversation(prev => [...prev, { 
-          from: 'ai', 
-          text: 'Is there anything specific you would like us to prepare for the consultation? Any particular aspects of your project you&apos;d like us to focus on?' 
-        }]);
-        setTimeout(() => {
-          setShowOptions(true);
-          setCurrentStage('confirmed');
-        }, 500);
-      }, 1500);
-    }, 1200);
+        setShowOptions(true);
+        setCurrentStage('confirmed');
+      }, 500);
+    }, 1500);
   };
 
+  // Theme-based style variables
+  const themeStyles = {
+    dark: {
+      bgGradient: 'bg-gradient-to-b from-[#0f0f0f] to-[#161616]',
+      panelBg: 'bg-gradient-to-br from-[#1A1A1A] to-[#222]',
+      panelBorder: 'border-white/10',
+      textPrimary: 'text-white',
+      textSecondary: 'text-white/60',
+      textTertiary: 'text-white/40',
+      headerBg: 'bg-white/5',
+      inputBg: 'bg-white/5',
+      inputBgHover: 'hover:bg-white/10',
+      inputBorder: 'border-white/5',
+      inputBorderHover: 'hover:border-white/15',
+      buttonGradient: 'from-blue-600 to-blue-500',
+      buttonHoverGradient: 'hover:from-blue-500 hover:to-blue-400',
+      buttonBorder: 'border-blue-400/20',
+      messageBg: 'bg-white/8',
+      messageBorder: 'border-white/10',
+      headingBg: 'bg-[#222]',
+      indicatorBg: 'bg-blue-400',
+      timelineBg: 'bg-white/5',
+      timelineFill: 'from-blue-500 to-blue-400',
+      dotActiveBg: 'bg-blue-400',
+      dotInactiveBg: 'bg-white/20',
+      tabActiveBg: 'bg-white/10',
+      tabActiveBorder: 'border-white/10',
+      shadow: 'shadow-black/30',
+      headerTextBg: 'bg-white/5',
+      iconBg: 'bg-white/10',
+      border: 'border-white/10',
+      badgeBg: 'bg-blue-900/30',
+      tagText: 'text-blue-300',
+    },
+    light: {
+      bgGradient: 'bg-gradient-to-b from-[#f0f4f8] to-[#e6eef5]',
+      panelBg: 'bg-gradient-to-br from-white to-[#f5f7fa]',
+      panelBorder: 'border-gray-200',
+      textPrimary: 'text-gray-800',
+      textSecondary: 'text-gray-600',
+      textTertiary: 'text-gray-500',
+      headerBg: 'bg-gray-100',
+      inputBg: 'bg-gray-100',
+      inputBgHover: 'hover:bg-gray-200',
+      inputBorder: 'border-gray-200',
+      inputBorderHover: 'hover:border-gray-300',
+      buttonGradient: 'from-blue-500 to-blue-400',
+      buttonHoverGradient: 'hover:from-blue-400 hover:to-blue-300',
+      buttonBorder: 'border-blue-300/50',
+      messageBg: 'bg-gray-100',
+      messageBorder: 'border-gray-200',
+      headingBg: 'bg-gray-100',
+      indicatorBg: 'bg-blue-500',
+      timelineBg: 'bg-gray-100',
+      timelineFill: 'from-blue-500 to-blue-400',
+      dotActiveBg: 'bg-blue-500',
+      dotInactiveBg: 'bg-gray-300',
+      tabActiveBg: 'bg-blue-50',
+      tabActiveBorder: 'border-blue-200',
+      shadow: 'shadow-gray-300/30',
+      headerTextBg: 'bg-blue-50',
+      iconBg: 'bg-gray-100',
+      border: 'border-gray-200',
+      badgeBg: 'bg-blue-50',
+      tagText: 'text-blue-600',
+    }
+  };
+
+  // Current theme styling
+  const ts = themeStyles[theme];
+
+  // Add effect for horizontal scroll touch handling
+  useEffect(() => {
+    if (!optionsScrollRef.current || !isMobile) return;
+    
+    let isDown = false;
+    let startX: number;
+    let scrollLeft: number;
+    
+    const optionsEl = optionsScrollRef.current;
+    
+    const onMouseDown = (e: MouseEvent | TouchEvent) => {
+      isDown = true;
+      optionsEl.classList.add('active');
+      
+      if ('touches' in e) {
+        startX = e.touches[0].pageX - optionsEl.offsetLeft;
+      } else {
+        startX = e.pageX - optionsEl.offsetLeft;
+      }
+      
+      scrollLeft = optionsEl.scrollLeft;
+    };
+    
+    const onMouseLeave = () => {
+      isDown = false;
+      optionsEl.classList.remove('active');
+    };
+    
+    const onMouseUp = () => {
+      isDown = false;
+      optionsEl.classList.remove('active');
+    };
+    
+    const onMouseMove = (e: MouseEvent | TouchEvent) => {
+      if (!isDown) return;
+      e.preventDefault();
+      
+      let x: number;
+      if ('touches' in e) {
+        x = e.touches[0].pageX - optionsEl.offsetLeft;
+      } else {
+        x = e.pageX - optionsEl.offsetLeft;
+      }
+      
+      const walk = (x - startX) * 2; // Scroll multiplier
+      optionsEl.scrollLeft = scrollLeft - walk;
+    };
+    
+    // Mouse events
+    optionsEl.addEventListener('mousedown', onMouseDown);
+    optionsEl.addEventListener('mouseleave', onMouseLeave);
+    optionsEl.addEventListener('mouseup', onMouseUp);
+    optionsEl.addEventListener('mousemove', onMouseMove);
+    
+    // Touch events
+    optionsEl.addEventListener('touchstart', onMouseDown);
+    optionsEl.addEventListener('touchend', onMouseUp);
+    optionsEl.addEventListener('touchmove', onMouseMove);
+    
+    return () => {
+      // Cleanup event listeners
+      optionsEl.removeEventListener('mousedown', onMouseDown);
+      optionsEl.removeEventListener('mouseleave', onMouseLeave);
+      optionsEl.removeEventListener('mouseup', onMouseUp);
+      optionsEl.removeEventListener('mousemove', onMouseMove);
+      
+      optionsEl.removeEventListener('touchstart', onMouseDown);
+      optionsEl.removeEventListener('touchend', onMouseUp);
+      optionsEl.removeEventListener('touchmove', onMouseMove);
+    };
+  }, [isMobile]);
+
   return (
-    <section className="w-full py-24 md:py-32 px-6 md:px-12 relative bg-[#111111]">
-      {/* Minimal header */}
+    <section className={`w-full py-16 md:py-24 px-6 md:px-12 relative ${ts.bgGradient} ${isMobile && showOptions ? 'pb-32' : ''}`}>
+      {/* Subtle background elements */}
+      <div className="absolute top-0 left-0 w-full h-64 bg-blue-500/5 blur-[100px] z-0"></div>
+      <div className="absolute bottom-0 right-0 w-64 h-64 bg-indigo-500/5 blur-[100px] z-0"></div>
+      
+      {/* Theme toggle */}
+      <div className="absolute top-6 right-6 z-20">
+        <button 
+          onClick={toggleTheme}
+          className={`p-2.5 rounded-full ${ts.panelBg} ${ts.panelBorder} border flex items-center justify-center transition-all duration-300 ${ts.shadow}`}
+          aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+        >
+          {theme === 'dark' ? (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M12 18C15.3137 18 18 15.3137 18 12C18 8.68629 15.3137 6 12 6C8.68629 6 6 8.68629 6 12C6 15.3137 8.68629 18 12 18Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M12 2V4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M12 20V22" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M4.93 4.93L6.34 6.34" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M17.66 17.66L19.07 19.07" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M2 12H4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M20 12H22" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M4.93 19.07L6.34 17.66" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M17.66 6.34L19.07 4.93" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          ) : (
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="#1E293B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          )}
+        </button>
+      </div>
+      
+      {/* Main content area */}
       <div className="relative z-10 max-w-7xl mx-auto">
-        <div className="flex justify-between items-center mb-32">
-          <div className="flex items-center">
-            <div className="w-8 h-8 rounded-sm bg-white/10 flex items-center justify-center mr-2">
-              <span className="text-white text-xs font-medium">O</span>
-            </div>
-            <span className="text-white text-sm">omeru digital</span>
-          </div>
-          
-          <div className="flex items-center space-x-8">
-            <span className="text-white/60 text-sm">Services</span>
-            <span className="text-white/60 text-sm">Work</span>
-            <span className="text-white/60 text-sm">About</span>
-            <span className="text-white/60 text-sm">Contact</span>
-          </div>
-        </div>
-        
         {/* Hero headline */}
-        <div className="mb-32 text-center">
-          <h1 className="text-6xl md:text-8xl font-display font-bold text-white mb-4">
+        <div className="mb-20 text-center">
+          <div className="flex justify-center mb-6">
+            <img src="/LwaziNF.png" alt="Omeru Digital Logo" className="w-24 h-24" />
+          </div>
+          <div className={`mb-4 inline-block px-3 py-1 ${ts.headerTextBg} rounded-full ${ts.textSecondary} text-xs uppercase tracking-wider`}>Next-Gen Digital Solutions</div>
+          <h1 className={`text-6xl md:text-8xl font-display font-bold ${ts.textPrimary} mb-6 tracking-tight`}>
             OMERU PRO
-            <span className="inline-flex items-center justify-center ml-3 bg-blue-500 text-white text-sm px-2 py-1 rounded-md align-top mt-6">
+            <span className="inline-flex items-center justify-center ml-3 bg-gradient-to-r from-blue-600 to-blue-400 text-white text-sm px-3 py-1 rounded-md align-top mt-6">
               v1.0
             </span>
           </h1>
-          <div className="text-white/60 uppercase tracking-widest text-sm mt-3">
-            M U L T I P U R P O S E
+          <div className={`${ts.textSecondary} uppercase tracking-widest text-sm mt-3 font-light`}>
+            MULTIPURPOSE DIGITAL ECOSYSTEM
           </div>
         </div>
         
         {/* Main content area */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
           {/* Left panel */}
-          <div className="bg-[#1A1A1A] rounded-xl p-6 border border-white/5 h-[400px] flex flex-col relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-radial from-white/5 to-transparent opacity-30" style={{ background: 'radial-gradient(circle at 50% 0%, rgba(255,255,255,0.05), transparent 70%)' }}></div>
+          <div className={`${ts.panelBg} rounded-2xl p-6 ${ts.panelBorder} border min-h-[450px] md:h-[500px] flex flex-col relative overflow-hidden shadow-xl ${ts.shadow} ${isMobile ? 'md:block hidden' : ''}`}>
+            <div className="absolute inset-0 bg-gradient-radial from-white/5 to-transparent opacity-30" style={{ background: 'radial-gradient(circle at 50% 0%, rgba(255,255,255,0.08), transparent 70%)' }}></div>
             
             <div className="relative z-10">
-              <div className="p-3 bg-[#222] rounded-lg mb-6">
-                <div className="flex items-center mb-2">
-                  <div className="w-6 h-6 rounded-full bg-white/10 flex items-center justify-center">
-                    <span className="text-white text-xs">O</span>
+              <div className={`p-4 ${ts.headingBg} rounded-xl mb-6 ${ts.panelBorder} border shadow-lg ${ts.shadow}`}>
+                <div className="flex items-center mb-3">
+                  <div className="w-7 h-7 rounded-full bg-blue-600/20 flex items-center justify-center overflow-hidden">
+                    <img src="/LwaziNF.png" alt="" className="w-4 h-4" />
                   </div>
-                  <span className="ml-2 text-white/80 text-xs">omeru</span>
+                  <span className={`ml-2 ${ts.textPrimary} text-sm font-medium`}>omeru assistant</span>
                 </div>
-                <p className="text-white/80 text-sm">How can I help with your digital ecosystem today?</p>
+                <p className={`${ts.textSecondary} text-sm`}>How can I help with your digital ecosystem today?</p>
               </div>
               
-              {/* Options */}
-              {currentStage === 'initial' && (
-                <div className="space-y-2">
+              {/* Options - Desktop version only */}
+              {currentStage === 'initial' && !isMobile && (
+                <div className="space-y-2.5">
                   {Object.keys(serviceCategories).map((key) => (
                     <button
                       key={key}
                       onClick={() => handleOptionSelect(key)}
-                      className="w-full p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/80 text-sm text-left flex items-center transition-all"
+                      className={`w-full p-3 rounded-xl ${ts.inputBg} ${ts.inputBgHover} ${ts.inputBorderHover} ${ts.textSecondary} hover:${ts.textPrimary} text-sm text-left flex items-center transition-all duration-200 ease-out ${ts.inputBorder} border shadow-sm ${ts.shadow}`}
                     >
-                      <div className="w-3 h-3 rounded-full bg-white/10 mr-2"></div>
+                      <div className="w-4 h-4 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 mr-3 flex items-center justify-center">
+                        <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+                      </div>
                       {serviceCategories[key as keyof typeof serviceCategories].label}
                     </button>
                   ))}
                 </div>
               )}
               
-              {/* Dynamic options for other stages */}
-              {currentStage !== 'initial' && showOptions && (
-                <div className="space-y-2">
+              {/* Dynamic options for other stages - Desktop version only */}
+              {currentStage !== 'initial' && showOptions && !isMobile && (
+                <div className="space-y-2.5">
                   {getOptions().map((option) => (
                     <button
                       key={option.value}
                       onClick={() => handleOptionSelect(option.value)}
-                      className="w-full p-2 rounded-lg bg-white/5 hover:bg-white/10 text-white/80 text-sm text-left flex items-center transition-all"
+                      className={`w-full p-3 rounded-xl ${ts.inputBg} ${ts.inputBgHover} ${ts.inputBorderHover} ${ts.textSecondary} hover:${ts.textPrimary} text-sm text-left flex items-center transition-all duration-200 ease-out ${ts.inputBorder} border shadow-sm ${ts.shadow}`}
                     >
-                      <div className="w-3 h-3 rounded-full bg-white/10 mr-2"></div>
+                      <div className="w-4 h-4 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 mr-3 flex items-center justify-center">
+                        <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
+                      </div>
                       {option.label}
                     </button>
                   ))}
@@ -445,22 +655,20 @@ const Hero = () => {
               
               {/* Typing indicator */}
               {isTyping && (
-                <div className="flex space-x-1 mt-4 ml-2">
-                  <motion.div 
-                    className="w-1.5 h-1.5 bg-blue-400 rounded-full"
-                    animate={{ opacity: [0.4, 1, 0.4] }}
-                    transition={{ duration: 1, repeat: Infinity, delay: 0 }}
-                  />
-                  <motion.div 
-                    className="w-1.5 h-1.5 bg-blue-400 rounded-full"
-                    animate={{ opacity: [0.4, 1, 0.4] }}
-                    transition={{ duration: 1, repeat: Infinity, delay: 0.3 }}
-                  />
-                  <motion.div 
-                    className="w-1.5 h-1.5 bg-blue-400 rounded-full"
-                    animate={{ opacity: [0.4, 1, 0.4] }}
-                    transition={{ duration: 1, repeat: Infinity, delay: 0.6 }}
-                  />
+                <div className="flex items-center mt-3 ml-2 group">
+                  <div className="flex-shrink-0 mr-2">
+                    <div className={`w-6 h-6 rounded-full ${ts.iconBg} flex items-center justify-center overflow-hidden border ${ts.border} ${styles.avatarPulse}`}>
+                      <img src="/LwaziNF.png" alt="" className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <div className={`p-3 rounded-xl ${ts.messageBg} ${ts.messageBorder} border ${ts.shadow} inline-flex items-center`}>
+                    <div className={styles.typingIndicator}>
+                      <div className={`${styles.typingDot} ${ts.indicatorBg}`}></div>
+                      <div className={`${styles.typingDot} ${ts.indicatorBg}`}></div>
+                      <div className={`${styles.typingDot} ${ts.indicatorBg}`}></div>
+                    </div>
+                    <span className={`ml-2 text-xs opacity-70 ${ts.textSecondary} hidden group-hover:inline`}>Omeru is typing...</span>
+                  </div>
                 </div>
               )}
             </div>
@@ -468,7 +676,7 @@ const Hero = () => {
             {/* Action button */}
             <div className="mt-auto">
               <button 
-                className="w-full py-2 px-4 rounded-md bg-blue-500 text-white text-sm font-medium"
+                className={`w-full py-3 px-4 rounded-xl bg-gradient-to-r ${ts.buttonGradient} ${ts.buttonHoverGradient} text-white text-sm font-medium transition-all duration-200 shadow-lg shadow-blue-900/20 ${ts.buttonBorder} border`}
                 onClick={() => {
                   if (!aiReady) {
                     setAiReady(true);
@@ -482,50 +690,120 @@ const Hero = () => {
           </div>
           
           {/* Middle panel - chat interaction */}
-          <div className="bg-[#1A1A1A] rounded-xl p-6 border border-white/5 h-[400px] flex flex-col relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-radial from-white/5 to-transparent opacity-30" style={{ background: 'radial-gradient(circle at 50% 0%, rgba(255,255,255,0.05), transparent 70%)' }}></div>
+          <div className={`${ts.panelBg} rounded-2xl p-6 ${ts.panelBorder} border min-h-[450px] md:h-[500px] flex flex-col relative overflow-hidden shadow-xl ${ts.shadow} ${styles.chatContainer}`}>
+            <div className="absolute inset-0 bg-gradient-radial from-white/5 to-transparent opacity-30" style={{ background: 'radial-gradient(circle at 50% 0%, rgba(255,255,255,0.08), transparent 70%)' }}></div>
             
-            <div className="relative z-10 flex-1 overflow-y-auto" style={{ scrollbarWidth: 'thin' }}>
-              {/* Conversation history */}
-              <div className="space-y-4">
-                {conversation.map((message, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className={`flex ${message.from === 'user' ? 'justify-end' : 'justify-start'}`}
-                  >
-                    <div 
-                      className={`max-w-[90%] p-3 rounded-lg ${
-                        message.from === 'user' 
-                          ? 'bg-blue-500 text-white' 
-                          : 'bg-white/5 text-white/80'
-                      }`}
-                    >
-                      <p className="text-sm">{message.text}</p>
+            <div className={`flex items-center justify-between mb-4 pb-3 border-b ${ts.panelBorder}`}>
+              <div className="flex items-center">
+                <div className={`flex items-center justify-center w-5 h-5 ${ts.iconBg} rounded-full mr-2 overflow-hidden border ${ts.border}`}>
+                  <img src="/LwaziNF.png" alt="" className="w-3 h-3" />
+                </div>
+                <div>
+                  <div className="flex items-center">
+                    <span className={`${ts.textPrimary} text-xs font-medium`}>Omeru Assistant</span>
+                    <div className={`ml-2 flex items-center px-1.5 py-0.5 rounded-full ${ts.badgeBg}`}>
+                      <div className={`w-1.5 h-1.5 ${ts.indicatorBg} rounded-full mr-1 animate-pulse`}></div>
+                      <span className={`text-[9px] ${ts.tagText}`}>ONLINE</span>
                     </div>
-                  </motion.div>
-                ))}
+                  </div>
+                  <span className={`${ts.textTertiary} text-[10px]`}>Available 24/7 to assist you</span>
+                </div>
+              </div>
+              <button className={`w-6 h-6 ${ts.iconBg} rounded-full flex items-center justify-center ${ts.border} border hover:opacity-80 transition-opacity`}>
+                <svg className={`w-3 h-3 ${ts.textSecondary}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
+                </svg>
+              </button>
+            </div>
+            
+            <div className={`relative z-10 flex-1 overflow-y-auto pr-2 ${styles.chatContainer}`}>
+              {/* Conversation history */}
+              <div className="space-y-5 py-2">
+                {conversation.map((message, index) => {
+                  // Generate a timestamp for the message
+                  const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                  const isFirstInSequence = index === 0 || conversation[index - 1].from !== message.from;
+                  const isLastInSequence = index === conversation.length - 1 || conversation[index + 1].from !== message.from;
+                  
+                  return (
+                    <motion.div
+                      key={index}
+                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      transition={{ duration: 0.3, type: 'spring', stiffness: 120, damping: 10 }}
+                      className={`flex ${message.from === 'user' ? 'justify-end' : 'justify-start'} relative group`}
+                    >
+                      {/* Avatar - Only show on first message in sequence */}
+                      {message.from === 'ai' && isFirstInSequence && (
+                        <div className="flex-shrink-0 mr-2 mt-1">
+                          <div className={`w-6 h-6 rounded-full ${ts.iconBg} flex items-center justify-center overflow-hidden border ${ts.border} ${styles.avatarPulse}`}>
+                            <img src="/LwaziNF.png" alt="" className="w-4 h-4" />
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div 
+                        className={`relative max-w-[85%] p-3.5 ${
+                          message.from === 'user' 
+                            ? `rounded-t-xl rounded-bl-xl rounded-br-sm bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-900/20 ml-6 ${styles.messageBubbleUser}` 
+                            : `rounded-t-xl rounded-br-xl rounded-bl-sm ${ts.messageBg} ${ts.messageBorder} border ${ts.textPrimary} shadow-md ${ts.shadow} mr-6 ${styles.messageBubbleAi}`
+                        } ${!isLastInSequence ? 'mb-1.5' : ''}`}
+                      >
+                        <p className="text-sm leading-relaxed">{message.text}</p>
+                        
+                        {/* Timestamp */}
+                        <div className={`absolute ${message.from === 'user' ? 'right-2 -bottom-5' : 'left-2 -bottom-5'} opacity-0 group-hover:opacity-70 transition-opacity text-[10px] ${ts.textTertiary}`}>
+                          {timestamp}
+                        </div>
+                        
+                        {/* Message tail */}
+                        {isLastInSequence && (
+                          <div className={`absolute ${message.from === 'user' ? '-right-2 bottom-0' : '-left-2 bottom-0'}`}>
+                            <div className={`w-2 h-2 ${
+                              message.from === 'user'
+                                ? 'bg-blue-500'
+                                : ts.messageBg
+                            } transform ${message.from === 'user' ? 'rotate-45' : '-rotate-45'}`}
+                            ></div>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* User Avatar - Only show on first message in sequence */}
+                      {message.from === 'user' && isFirstInSequence && (
+                        <div className="flex-shrink-0 ml-2 mt-1">
+                          <div className={`w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center overflow-hidden border ${ts.border}`}>
+                            <span className="text-[10px] text-white font-medium">You</span>
+                          </div>
+                        </div>
+                      )}
+                    </motion.div>
+                  );
+                })}
               </div>
               
               {/* Welcome message when empty */}
               {conversation.length === 0 && !isTyping && (
                 <div className="h-full flex items-center justify-center">
-                  <div className="text-center">
+                  <div className="text-center max-w-xs">
                     <motion.div
-                      className="w-12 h-12 mx-auto rounded-full bg-white/5 flex items-center justify-center mb-4"
-                      animate={{ scale: [1, 1.05, 1] }}
-                      transition={{ duration: 2, repeat: Infinity }}
+                      className={`w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-blue-600/30 to-indigo-600/20 flex items-center justify-center mb-8 ${ts.panelBorder} border shadow-lg ${ts.shadow}`}
+                      animate={{ scale: [1, 1.05, 1], rotate: [0, 2, 0, -2, 0] }}
+                      transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
                     >
-                      <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5"/>
-                        <path d="M8 12H16" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" strokeLinecap="round"/>
-                        <path d="M12 8V16" stroke="rgba(255,255,255,0.5)" strokeWidth="1.5" strokeLinecap="round"/>
-                      </svg>
+                      <img src="/LwaziNF.png" alt="Omeru Digital" className="w-12 h-12" />
                     </motion.div>
-                    <p className="text-white/60 text-sm">
-                      Select a service from the panel on the left to get started
+                    <h3 className={`${ts.textPrimary} text-lg font-medium mb-3`}>
+                      Welcome to Omeru Digital
+                    </h3>
+                    <p className={`${ts.textSecondary} text-sm mb-6`}>
+                      I&apos;m your intelligent AI assistant, ready to help you explore our services and find the perfect solution for your needs.
                     </p>
+                    <div className={`${ts.badgeBg} p-3 rounded-lg inline-block`}>
+                      <p className={`${ts.tagText} text-xs`}>
+                        Select a service from the options to start our conversation
+                      </p>
+                    </div>
                   </div>
                 </div>
               )}
@@ -536,30 +814,52 @@ const Hero = () => {
           </div>
           
           {/* Right panel - visualization */}
-          <div className="bg-[#1A1A1A] rounded-xl p-6 border border-white/5 h-[400px] flex flex-col relative overflow-hidden">
-            <div className="absolute inset-0 bg-gradient-radial from-white/5 to-transparent opacity-30" style={{ background: 'radial-gradient(circle at 50% 0%, rgba(255,255,255,0.05), transparent 70%)' }}></div>
+          <div className={`${ts.panelBg} rounded-2xl p-6 ${ts.panelBorder} border min-h-[450px] md:h-[500px] flex flex-col relative overflow-hidden shadow-xl ${ts.shadow}`}>
+            <div className="absolute inset-0 bg-gradient-radial from-white/5 to-transparent opacity-30" style={{ background: 'radial-gradient(circle at 50% 0%, rgba(255,255,255,0.08), transparent 70%)' }}></div>
+            
+            <div className={`flex items-center justify-between mb-4 pb-3 border-b ${ts.panelBorder}`}>
+              <div className="flex items-center">
+                <div className={`w-2 h-2 ${ts.indicatorBg} rounded-full mr-2`}></div>
+                <span className={`${ts.textSecondary} text-xs`}>SERVICE DETAILS</span>
+              </div>
+              <div className="flex space-x-1">
+                <div className={`w-1.5 h-1.5 ${ts.dotInactiveBg} rounded-full`}></div>
+                <div className={`w-1.5 h-1.5 ${ts.dotInactiveBg} rounded-full`}></div>
+                <div className={`w-1.5 h-1.5 ${ts.dotInactiveBg} rounded-full`}></div>
+              </div>
+            </div>
             
             <div className="relative z-10 h-full flex items-center justify-center">
               {selectedService ? (
                 <div className="text-center">
-                  <div className="w-16 h-16 mx-auto rounded-full bg-white/10 flex items-center justify-center mb-4">
-                    <div className="w-8 h-8 bg-white/5 rounded-md flex items-center justify-center">
-                      <span className="text-blue-400 text-lg">O</span>
+                  <div className={`w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-blue-600/20 to-indigo-600/10 flex items-center justify-center mb-6 ${ts.panelBorder} border`}>
+                    <div className={`w-10 h-10 ${ts.inputBg} rounded-md flex items-center justify-center`}>
+                      <span className="text-blue-400 text-xl font-medium">O</span>
                     </div>
                   </div>
-                  <p className="text-white font-medium mb-1">
+                  <p className={`${ts.textPrimary} font-medium text-lg mb-2`}>
                     {selectedService && serviceCategories[selectedService as keyof typeof serviceCategories].label}
                   </p>
-                  <p className="text-white/60 text-sm">
-                    Streamlined solutions for modern businesses
+                  <p className={`${ts.textSecondary} text-sm max-w-[250px] mx-auto`}>
+                    Streamlined solutions designed to transform your business operations and enhance digital presence
                   </p>
+                  
+                  <div className={`mt-8 ${ts.timelineBg} p-4 rounded-lg ${ts.panelBorder} border`}>
+                    <div className="flex items-center justify-between mb-3">
+                      <span className={`${ts.textSecondary} text-xs`}>PROJECT TIMELINE</span>
+                      <span className="text-blue-400 text-xs">4-6 weeks</span>
+                    </div>
+                    <div className={`h-1.5 ${theme === 'dark' ? 'bg-white/10' : 'bg-gray-200'} rounded-full overflow-hidden`}>
+                      <div className={`h-full w-[75%] bg-gradient-to-r ${ts.timelineFill} rounded-full`}></div>
+                    </div>
+                  </div>
                   
                   <div className="mt-6 flex justify-center space-x-2">
                     {[1, 2, 3].map((dot) => (
                       <div 
                         key={dot} 
                         className={`w-2 h-2 rounded-full ${
-                          dot === 1 ? 'bg-blue-400' : 'bg-white/20'
+                          dot === 1 ? ts.dotActiveBg : ts.dotInactiveBg
                         }`}
                       ></div>
                     ))}
@@ -567,28 +867,29 @@ const Hero = () => {
                 </div>
               ) : (
                 <div className="text-center">
-                  <svg className="w-12 h-12 mx-auto mb-4 text-white/20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <svg className={`w-16 h-16 mx-auto mb-6 ${theme === 'dark' ? 'text-white/10' : 'text-gray-300'}`} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M9 12H15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                     <path d="M12 9L12 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                     <path d="M3 12C3 4.5885 4.5885 3 12 3C19.4115 3 21 4.5885 21 12C21 19.4115 19.4115 21 12 21C4.5885 21 3 19.4115 3 12Z" stroke="currentColor" strokeWidth="1.5"/>
                   </svg>
-                  <p className="text-white/40 text-sm">Select a service to view details</p>
+                  <p className={`${ts.textTertiary} text-sm`}>Select a service to view details</p>
+                  <p className={`${theme === 'dark' ? 'text-white/30' : 'text-gray-400'} text-xs mt-2`}>Comprehensive information will appear here</p>
                 </div>
               )}
             </div>
           </div>
         </div>
         
-        {/* Minimal categories */}
-        <div className="mt-16 flex justify-center space-x-8">
+        {/* Service categories - Desktop */}
+        <div className="mt-16 hidden md:flex justify-center md:items-center flex-wrap md:flex-nowrap gap-4 md:gap-0 md:space-x-10">
           {Object.keys(serviceCategories).map((key) => (
             <button
               key={key}
               onClick={() => setActiveTab(key)}
-              className={`text-sm transition-all ${
+              className={`text-sm px-4 py-2 rounded-lg transition-all duration-200 ${
                 activeTab === key
-                  ? 'text-white'
-                  : 'text-white/40 hover:text-white/70'
+                  ? `${ts.tabActiveBg} ${ts.textPrimary} shadow-sm ${ts.shadow} ${ts.tabActiveBorder} border`
+                  : `${ts.textTertiary} hover:${ts.textSecondary}`
               }`}
             >
               {serviceCategories[key as keyof typeof serviceCategories].label}
@@ -596,6 +897,73 @@ const Hero = () => {
           ))}
         </div>
       </div>
+      
+      {/* Mobile options UI fixed at bottom */}
+      {isMobile && showOptions && (
+        <div className="fixed bottom-0 left-0 right-0 z-50 w-full">
+          {/* Current question display */}
+          <div className={`${ts.panelBg} p-3 ${ts.panelBorder} border-t border-x w-full ${ts.textPrimary} text-center font-medium text-sm shadow-lg ${ts.shadow}`}>
+            {currentQuestion}
+            {isTyping && (
+              <div className="flex justify-center space-x-1.5 mt-2">
+                <motion.div 
+                  className={`w-1.5 h-1.5 ${ts.indicatorBg} rounded-full`}
+                  animate={{ opacity: [0.4, 1, 0.4], scale: [0.9, 1.1, 0.9] }}
+                  transition={{ duration: 1, repeat: Infinity, delay: 0 }}
+                />
+                <motion.div 
+                  className={`w-1.5 h-1.5 ${ts.indicatorBg} rounded-full`}
+                  animate={{ opacity: [0.4, 1, 0.4], scale: [0.9, 1.1, 0.9] }}
+                  transition={{ duration: 1, repeat: Infinity, delay: 0.3 }}
+                />
+                <motion.div 
+                  className={`w-1.5 h-1.5 ${ts.indicatorBg} rounded-full`}
+                  animate={{ opacity: [0.4, 1, 0.4], scale: [0.9, 1.1, 0.9] }}
+                  transition={{ duration: 1, repeat: Infinity, delay: 0.6 }}
+                />
+              </div>
+            )}
+          </div>
+          
+          {/* Scrollable options */}
+          <div 
+            ref={optionsScrollRef}
+            className={`${ts.panelBg} p-3 ${ts.panelBorder} border-t border-x border-b overflow-x-auto flex space-x-3 pb-6 pt-2 px-4 whitespace-nowrap`}
+            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', touchAction: 'pan-x' }}
+          >
+            <style jsx>{`
+              div::-webkit-scrollbar {
+                display: none;
+              }
+              div.active {
+                cursor: grabbing;
+              }
+            `}</style>
+            
+            {getOptions().map((option) => (
+              <button
+                key={option.value}
+                onClick={() => handleOptionSelect(option.value)}
+                className={`flex-shrink-0 px-4 py-3 rounded-xl ${ts.inputBg} ${ts.inputBgHover} ${ts.inputBorderHover} ${ts.textSecondary} hover:${ts.textPrimary} text-sm text-center min-w-[150px] transition-all duration-200 ease-out ${ts.inputBorder} border shadow-sm ${ts.shadow}`}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+          
+          {/* Optional: Add small indicator dots to show swipeable content */}
+          <div className="flex justify-center mt-2 pb-1">
+            <div className="flex space-x-1">
+              {getOptions().length > 0 && getOptions().slice(0, Math.min(5, getOptions().length)).map((_, i) => (
+                <div 
+                  key={i} 
+                  className={`w-1.5 h-1.5 rounded-full ${i === 0 ? ts.dotActiveBg : ts.dotInactiveBg}`}
+                ></div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 };
