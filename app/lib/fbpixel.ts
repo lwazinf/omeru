@@ -4,6 +4,12 @@ export const FB_PIXEL_ID = process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID;
 // Initializes the Facebook Pixel
 export const initFacebookPixel = (): void => {
   if (!FB_PIXEL_ID) return;
+  
+  if (typeof window !== 'undefined') {
+    // Initialize Facebook Pixel
+    window.fbq?.('init', FB_PIXEL_ID);
+    window.fbq?.('track', 'PageView');
+  }
 };
 
 // Track a Page View

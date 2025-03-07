@@ -1,21 +1,30 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, Suspense } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 import Script from 'next/script';
-import { pageview, FB_PIXEL_ID } from '../lib/fbpixel';
+import { pageview, FB_PIXEL_ID, initFacebookPixel } from '../lib/fbpixel';
+import Image from 'next/image';
 
-export default function FacebookPixel() {
+// Client component that uses search params
+function FacebookPixelTracking() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
   useEffect(() => {
+    // Initialize Facebook Pixel on first load
+    initFacebookPixel();
+    
     // Track page views when the route changes
     if (pathname) {
       pageview();
     }
   }, [pathname, searchParams]);
 
+  return null;
+}
+
+export default function FacebookPixel() {
   if (!FB_PIXEL_ID) {
     return null;
   }
@@ -36,21 +45,24 @@ export default function FacebookPixel() {
             t.src=v;s=b.getElementsByTagName(e)[0];
             s.parentNode.insertBefore(t,s)}(window, document,'script',
             'https://connect.facebook.net/en_US/fbevents.js');
-            fbq('init', '${FB_PIXEL_ID}');
-            fbq('track', 'PageView');
           `,
         }}
       />
       {/* Fallback for when JavaScript is disabled */}
       <noscript>
-        <img
-          height="1"
-          width="1"
+        <Image
+          height={1}
+          width={1}
           style={{ display: 'none' }}
           src={`https://www.facebook.com/tr?id=${FB_PIXEL_ID}&ev=PageView&noscript=1`}
           alt=""
         />
       </noscript>
+      
+      {/* Wrap the component using useSearchParams in Suspense */}
+      <Suspense fallback={null}>
+        <FacebookPixelTracking />
+      </Suspense>
     </>
   );
 } 
