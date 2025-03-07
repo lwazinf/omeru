@@ -1144,7 +1144,7 @@ const Hero = () => {
                         Welcome to Omeru Digital Assistant
                       </h3>
                       <p className={`${ts.textSecondary} text-xs mb-4`}>
-                        Click "Connect with Omeru" to start a conversation with our AI assistant. We'll help you explore our digital services and find the perfect solution for your needs.
+                        Click &ldquo;Connect with Omeru&ldquo; to start a conversation with our AI assistant. We&lsquo;ll help you explore our digital services and find the perfect solution for your needs.
                       </p>
                       <div className={`px-3 py-2 rounded-md ${ts.inputBg} ${ts.panelBorder} border inline-block`}>
                         <p className={`${ts.textSecondary} text-xs`}>
