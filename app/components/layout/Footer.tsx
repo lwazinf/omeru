@@ -1,43 +1,27 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faFacebook, faTwitter, faInstagram, faLinkedin, faTiktok } from '@fortawesome/free-brands-svg-icons';
 import AnimatedElement from '../ui/AnimatedElement';
+import { useAtom } from 'jotai';
+import { themeModeAtom } from '../../store';
 
 const Footer = () => {
   const currentYear = new Date().getFullYear();
-  // Add theme state that syncs with the app's theme
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [themeMode, setThemeMode] = useAtom(themeModeAtom);
   
-  // Effect to detect theme from body class
-  useEffect(() => {
-    const detectTheme = () => {
-      if (typeof document !== 'undefined') {
-        if (document.body.classList.contains('theme-light')) {
-          setTheme('light');
-        } else {
-          setTheme('dark');
-        }
-      }
-    };
-    
-    // Set initial theme
-    detectTheme();
-    
-    // Create an observer to watch for class changes on body
-    const observer = new MutationObserver(detectTheme);
-    if (typeof document !== 'undefined') {
-      observer.observe(document.body, { 
-        attributes: true, 
-        attributeFilter: ['class'] 
-      });
+  const toggleTheme = () => {
+    setThemeMode(themeMode === 'dark' ? 'light' : 'dark');
+    // Update the document's class list to reflect the theme change
+    if (themeMode === 'dark') {
+      document.documentElement.classList.remove('dark-theme');
+    } else {
+      document.documentElement.classList.add('dark-theme');
     }
-    
-    return () => observer.disconnect();
-  }, []);
+  };
   
   // Animation variants
   const containerVariants = {
@@ -93,7 +77,7 @@ const Footer = () => {
   };
   
   // Current theme styling
-  const ts = themeStyles[theme];
+  const ts = themeStyles[themeMode];
   
   return (
     <footer className={`${ts.bg} ${ts.text} py-16 px-6 md:px-12 relative overflow-hidden`}>
@@ -121,12 +105,9 @@ const Footer = () => {
           >
             {/* Company Info */}
             <motion.div className="mb-8 md:mb-0" variants={itemVariants}>
-              <div className="flex items-center mb-4">
-                <img src="/LwaziNF.png" alt="Omeru Digital" className="w-10 h-10 mr-3" />
-                <h2 className="text-3xl font-display font-bold">
-                  <span className="gradient-text">omeru</span>.digital
-                </h2>
-              </div>
+              <h2 className="text-3xl font-display font-bold mb-4">
+                <span className="gradient-text">omeru</span>.digital
+              </h2>
               <p className={`${ts.textSecondary} mb-6 leading-relaxed`}>
                 Unlocking human potential with generative AI solutions for creative and industrial applications.
               </p>
@@ -186,7 +167,7 @@ const Footer = () => {
                 {['Models', 'Applications', 'Documentation', 'Pricing', 'Contact'].map((item) => (
                   <motion.li key={item} whileHover={{ x: 5 }} transition={{ type: 'spring', stiffness: 400 }}>
                     <Link href="#" className={`${ts.textSecondary} ${ts.linkHover} transition-colors flex items-center`}>
-                      <span className={`${theme === 'dark' ? 'text-blue-400/60' : 'text-[#00452E]/60'} mr-2`}>›</span> {item}
+                      <span className={`${themeMode === 'dark' ? 'text-blue-400/60' : 'text-[#00452E]/60'} mr-2`}>›</span> {item}
                     </Link>
                   </motion.li>
                 ))}
@@ -200,24 +181,42 @@ const Footer = () => {
                 {['Blog', 'Tutorials', 'Case Studies', 'API Reference', 'Community'].map((item) => (
                   <motion.li key={item} whileHover={{ x: 5 }} transition={{ type: 'spring', stiffness: 400 }}>
                     <Link href="#" className={`${ts.textSecondary} ${ts.linkHover} transition-colors flex items-center`}>
-                      <span className={`${theme === 'dark' ? 'text-blue-400/60' : 'text-[#00452E]/60'} mr-2`}>›</span> {item}
+                      <span className={`${themeMode === 'dark' ? 'text-blue-400/60' : 'text-[#00452E]/60'} mr-2`}>›</span> {item}
                     </Link>
                   </motion.li>
                 ))}
               </ul>
             </motion.div>
             
-            {/* Legal */}
+            {/* Legal & Theme Toggle */}
             <motion.div variants={itemVariants}>
               <h3 className={`text-xl font-bold mb-6 ${ts.text}`}>Legal</h3>
               <ul className="space-y-3">
                 {['Terms of Service', 'Privacy Policy', 'Cookie Policy', 'Responsible AI', 'Security'].map((item) => (
                   <motion.li key={item} whileHover={{ x: 5 }} transition={{ type: 'spring', stiffness: 400 }}>
                     <Link href="#" className={`${ts.textSecondary} ${ts.linkHover} transition-colors flex items-center`}>
-                      <span className={`${theme === 'dark' ? 'text-blue-400/60' : 'text-[#00452E]/60'} mr-2`}>›</span> {item}
+                      <span className={`${themeMode === 'dark' ? 'text-blue-400/60' : 'text-[#00452E]/60'} mr-2`}>›</span> {item}
                     </Link>
                   </motion.li>
                 ))}
+                
+                {/* Theme Toggle */}
+                <motion.li className="pt-4 mt-4 border-t border-white/10" whileHover={{ x: 5 }} transition={{ type: 'spring', stiffness: 400 }}>
+                  <button 
+                    onClick={toggleTheme}
+                    className={`${ts.textSecondary} ${ts.linkHover} transition-colors flex items-center`}
+                    aria-label={`Switch to ${themeMode === 'dark' ? 'light' : 'dark'} mode`}
+                  >
+                    <span className={`${themeMode === 'dark' ? 'text-blue-400/60' : 'text-[#00452E]/60'} mr-2`}>
+                      {themeMode === 'dark' ? (
+                        '☀️'
+                      ) : (
+                        '🌙'
+                      )}
+                    </span>
+                    Switch to {themeMode === 'dark' ? 'Light' : 'Dark'} Mode
+                  </button>
+                </motion.li>
               </ul>
             </motion.div>
           </motion.div>

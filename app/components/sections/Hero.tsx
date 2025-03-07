@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
-import styles from './hero.module.css';
 
 // Service categories with subcategories
 const serviceCategories = {
@@ -110,14 +109,38 @@ const Hero = () => {
   
   // Chat state
   const [conversation, setConversation] = useState<Array<{from: 'ai' | 'user', text: string}>>([]);
-  const [currentStage, setCurrentStage] = useState<'initial' | 'service_selection' | 'project_details' | 'booking' | 'confirmed'>('initial');
+  const [currentStage, setCurrentStage] = useState<'initial' | 'service_selection' | 'project_details' | 'user_info' | 'project_goals' | 'project_nature' | 'inspiration' | 'country' | 'booking' | 'confirmed'>('initial');
   const [selectedService, setSelectedService] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
   const [omeruPersonality, setOmeruPersonality] = useState<'friendly' | 'professional' | 'technical'>('friendly');
   const [aiReady, setAiReady] = useState(false);
   
+  // Add state for client information
+  const [clientInfo, setClientInfo] = useState<{
+    name: string;
+    email: string;
+    company: string;
+    country: string;
+    projectGoals: string;
+    projectNature: string;
+    inspirationLinks: string;
+  }>({
+    name: '',
+    email: '',
+    company: '',
+    country: '',
+    projectGoals: '',
+    projectNature: '',
+    inspirationLinks: ''
+  });
+  const [showTextInput, setShowTextInput] = useState(false);
+  const [textInputValue, setTextInputValue] = useState('');
+  const [textInputField, setTextInputField] = useState<keyof typeof clientInfo | null>(null);
+  const [textInputPlaceholder, setTextInputPlaceholder] = useState('');
+  
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const textInputRef = useRef<HTMLInputElement>(null);
   
   // Add new state for tracking current question
   const [currentQuestion, setCurrentQuestion] = useState<string>("");
@@ -171,9 +194,29 @@ const Hero = () => {
         }));
       case 'project_details':
         return [
-          { value: 'proceed_to_booking', label: 'Schedule a Consultation' },
-          { value: 'ask_questions', label: 'I Have More Questions' },
-          { value: 'share_info', label: 'Send Info Materials' }
+          { value: 'proceed_to_user_info', label: 'Proceed to provide my details' },
+          { value: 'ask_questions', label: 'I Have More Questions' }
+        ];
+      case 'user_info':
+        return [
+          { value: 'proceed_to_project_goals', label: 'Continue' }
+        ];
+      case 'project_goals':
+        return [
+          { value: 'proceed_to_project_nature', label: 'Continue' }
+        ];
+      case 'project_nature':
+        return [
+          { value: 'proceed_to_country', label: 'Continue' }
+        ];
+      case 'country':
+        return [
+          { value: 'proceed_to_inspiration', label: 'Continue' }
+        ];
+      case 'inspiration':
+        return [
+          { value: 'proceed_to_booking', label: 'Continue to scheduling' },
+          { value: 'skip_booking', label: 'Submit without scheduling a call' }
         ];
       case 'booking':
         return bookingTimeSlots.map(slot => ({
@@ -206,9 +249,10 @@ const Hero = () => {
   
   // Terminal effect initialization
   useEffect(() => {
+    // Instead of auto-starting with a timeout, just initialize aiReady
+    // but don't start the conversation automatically
     const initTimeout = setTimeout(() => {
       setAiReady(true);
-      startConversation();
     }, 1200);
     
     return () => clearTimeout(initTimeout);
@@ -259,8 +303,10 @@ const Hero = () => {
       optionLabel = selectedOption.label;
     }
     
-    // Add user message
-    setConversation(prev => [...prev, { from: 'user', text: optionLabel }]);
+    // Add user message for most cases (when not using text input)
+    if (!showTextInput) {
+      setConversation(prev => [...prev, { from: 'user', text: optionLabel }]);
+    }
     setShowOptions(false);
     
     // Process based on current stage
@@ -275,6 +321,44 @@ const Hero = () => {
       case 'project_details':
         processProjectDetails(value);
         break;
+      case 'project_goals':
+        processProjectGoals();
+        break;
+      case 'inspiration':
+        if (value === 'proceed_to_booking') {
+          const bookingPrompt = omeruPersonalities[omeruPersonality].bookingPrompt;
+          setCurrentQuestion(bookingPrompt);
+          
+          setIsTyping(true);
+          setTimeout(() => {
+            setConversation(prev => [...prev, { 
+              from: 'ai', 
+              text: bookingPrompt
+            }]);
+            setIsTyping(false);
+            setTimeout(() => {
+              setShowOptions(true);
+              setCurrentStage('booking');
+            }, 500);
+          }, 1500);
+        } else if (value === 'skip_booking') {
+          const thankYouMessage = "Thank you for providing all this information! Our team will review it and get back to you via email soon.";
+          setCurrentQuestion("Would you like to explore other services?");
+          
+          setIsTyping(true);
+          setTimeout(() => {
+            setConversation(prev => [...prev, { 
+              from: 'ai', 
+              text: thankYouMessage
+            }]);
+            setIsTyping(false);
+            setTimeout(() => {
+              setShowOptions(true);
+              setCurrentStage('confirmed');
+            }, 1500);
+          }, 1500);
+        }
+        break;
       case 'booking':
         processBookingSelection(value, optionLabel);
         break;
@@ -283,8 +367,36 @@ const Hero = () => {
           // Reset and start over
           setConversation([]);
           setSelectedService(null);
+          setClientInfo({
+            name: '',
+            email: '',
+            company: '',
+            country: '',
+            projectGoals: '',
+            projectNature: '',
+            inspirationLinks: ''
+          });
           setCurrentStage('initial');
           startConversation();
+        } else if (value === 'contact') {
+          // Scroll to contact section
+          const contactSection = document.getElementById('contact');
+          if (contactSection) {
+            contactSection.scrollIntoView({ behavior: 'smooth' });
+          }
+          
+          // Clear the conversation
+          setConversation([]);
+          setSelectedService(null);
+          setClientInfo({
+            name: '',
+            email: '',
+            company: '',
+            country: '',
+            projectGoals: '',
+            projectNature: '',
+            inspirationLinks: ''
+          });
         }
         break;
     }
@@ -341,23 +453,25 @@ const Hero = () => {
     }, 1500);
   };
   
-  // Modify processProjectDetails to update current question
+  // Process project details selection
   const processProjectDetails = (value: string) => {
-    if (value === 'proceed_to_booking') {
-      const bookingPrompt = omeruPersonalities[omeruPersonality].bookingPrompt;
-      setCurrentQuestion(bookingPrompt);
+    if (value === 'proceed_to_user_info') {
+      // Transition to collecting user information
+      const promptMessage = "Great! To better prepare for our conversation, could you please share your name?";
+      setCurrentQuestion(promptMessage);
       
       setIsTyping(true);
       setTimeout(() => {
         setConversation(prev => [...prev, { 
           from: 'ai', 
-          text: bookingPrompt
+          text: promptMessage
         }]);
         setIsTyping(false);
-        setTimeout(() => {
-          setShowOptions(true);
-          setCurrentStage('booking');
-        }, 500);
+        setTextInputField('name');
+        setTextInputPlaceholder('Your name');
+        setShowTextInput(true);
+        setShowOptions(false);
+        setCurrentStage('user_info');
       }, 1500);
     } else if (value === 'ask_questions') {
       setTimeout(() => {
@@ -368,24 +482,166 @@ const Hero = () => {
         setIsTyping(false);
         setTimeout(() => {
           setShowOptions(true);
-          setCurrentStage('booking');
+          setCurrentStage('project_details');
         }, 500);
-      }, 1000);
-    } else {
-      setTimeout(() => {
-        setConversation(prev => [...prev, { 
-          from: 'ai', 
-          text: "I'll make sure you receive our comprehensive information materials. To better tailor them to your needs, it would be helpful to schedule a brief call to understand your specific requirements." 
-        }]);
-        setIsTyping(false);
-        setTimeout(() => {
-          setShowOptions(true);
-          setCurrentStage('booking');
-        }, 1000);
       }, 1000);
     }
   };
-  
+
+  // Process user information
+  const processUserInfo = () => {
+    if (textInputField === 'name') {
+      // Save name and ask for email
+      setClientInfo(prev => ({ ...prev, name: textInputValue }));
+      
+      const promptMessage = `Thanks ${textInputValue}! Could you also share your email address where we can reach you?`;
+      setCurrentQuestion(promptMessage);
+      
+      setIsTyping(true);
+      setTimeout(() => {
+        setConversation(prev => [...prev, { 
+          from: 'ai', 
+          text: promptMessage
+        }]);
+        setIsTyping(false);
+        setTextInputField('email');
+        setTextInputPlaceholder('Your email address');
+        setTextInputValue('');
+        setShowTextInput(true);
+      }, 1500);
+    } else if (textInputField === 'email') {
+      // Save email and ask for company
+      setClientInfo(prev => ({ ...prev, email: textInputValue }));
+      
+      const promptMessage = "Thanks! What company or organization are you with?";
+      setCurrentQuestion(promptMessage);
+      
+      setIsTyping(true);
+      setTimeout(() => {
+        setConversation(prev => [...prev, { 
+          from: 'ai', 
+          text: promptMessage
+        }]);
+        setIsTyping(false);
+        setTextInputField('company');
+        setTextInputPlaceholder('Your company or organization');
+        setTextInputValue('');
+        setShowTextInput(true);
+      }, 1500);
+    } else if (textInputField === 'company') {
+      // Save company and proceed to project goals
+      setClientInfo(prev => ({ ...prev, company: textInputValue }));
+      
+      const promptMessage = "Perfect! Now, could you please tell me more about your project goals? What are you hoping to achieve?";
+      setCurrentQuestion(promptMessage);
+      
+      setIsTyping(true);
+      setTimeout(() => {
+        setConversation(prev => [...prev, { 
+          from: 'ai', 
+          text: promptMessage
+        }]);
+        setIsTyping(false);
+        setShowTextInput(false);
+        setShowOptions(true);
+        setCurrentStage('project_goals');
+      }, 1500);
+    }
+  };
+
+  // Process project goals
+  const processProjectGoals = () => {
+    // Don't add the user's text message here since we're transitioning 
+    // from a button click, not a text input submission
+    
+    const promptMessage = "Thanks for sharing! Could you elaborate more on the nature of your project? For example, is it a new initiative, a redesign, an expansion of existing systems, etc.?";
+    setCurrentQuestion(promptMessage);
+    
+    setIsTyping(true);
+    setTimeout(() => {
+      setConversation(prev => [...prev, { 
+        from: 'ai', 
+        text: promptMessage
+      }]);
+      setIsTyping(false);
+      setTextInputField('projectGoals');
+      setTextInputPlaceholder('Your project goals');
+      setTextInputValue('');
+      setShowTextInput(true);
+      setShowOptions(false);
+      setCurrentStage('project_nature');
+    }, 1500);
+  };
+
+  // Process project nature
+  const processProjectNature = () => {
+    setClientInfo(prev => ({ ...prev, projectNature: textInputValue }));
+    
+    const promptMessage = "Which country or countries does your business primarily operate in? This helps us understand relevant regulations and market specifics.";
+    setCurrentQuestion(promptMessage);
+    
+    setIsTyping(true);
+    setTimeout(() => {
+      setConversation(prev => [...prev, { 
+        from: 'ai', 
+        text: promptMessage
+      }]);
+      setIsTyping(false);
+      setTextInputField('country');
+      setTextInputPlaceholder('Your country of operation');
+      setTextInputValue('');
+      setShowTextInput(true);
+      setShowOptions(false);
+      setCurrentStage('country');
+    }, 1500);
+  };
+
+  // Process country information
+  const processCountry = () => {
+    setClientInfo(prev => ({ ...prev, country: textInputValue }));
+    
+    const promptMessage = "Do you have any design inspirations, examples, or references you'd like to share? Feel free to paste any links or describe the style you're looking for.";
+    setCurrentQuestion(promptMessage);
+    
+    setIsTyping(true);
+    setTimeout(() => {
+      setConversation(prev => [...prev, { 
+        from: 'ai', 
+        text: promptMessage
+      }]);
+      setIsTyping(false);
+      setTextInputField('inspirationLinks');
+      setTextInputPlaceholder('Links or descriptions of design inspirations');
+      setTextInputValue('');
+      setShowTextInput(true);
+      setShowOptions(false);
+      setCurrentStage('inspiration');
+    }, 1500);
+  };
+
+  // Process inspiration information
+  const processInspiration = () => {
+    setClientInfo(prev => ({ ...prev, inspirationLinks: textInputValue }));
+    
+    // Save client information
+    saveClientInfo();
+    
+    const promptMessage = "Thank you for all this valuable information! Would you like to schedule a 15-minute discovery and strategy consultation to discuss your project in more detail?";
+    setCurrentQuestion(promptMessage);
+    
+    setIsTyping(true);
+    setTimeout(() => {
+      setConversation(prev => [...prev, { 
+        from: 'ai', 
+        text: promptMessage
+      }]);
+      setIsTyping(false);
+      setShowTextInput(false);
+      setShowOptions(true);
+      setCurrentStage('inspiration');
+    }, 1500);
+  };
+
   // Modify processBookingSelection to update current question
   const processBookingSelection = (value: string, label: string) => {
     const confirmationMessage = `Great! I've scheduled your consultation for ${label}. You'll receive a confirmation email shortly with details and a calendar invite.`;
@@ -403,6 +659,18 @@ const Hero = () => {
         setCurrentStage('confirmed');
       }, 500);
     }, 1500);
+  };
+
+  // Add this method to save client info to backend or localStorage
+  const saveClientInfo = () => {
+    // This uses clientInfo state to save or process the collected information
+    console.log('Client information collected:', clientInfo);
+    
+    // Here you would typically send this data to your backend
+    // Example: axios.post('/api/lead', clientInfo);
+    
+    // For now, let's store it in localStorage as an example
+    localStorage.setItem('latestClientInfo', JSON.stringify(clientInfo));
   };
 
   // Theme-based style variables
@@ -434,10 +702,6 @@ const Hero = () => {
       tabActiveBorder: 'border-white/10',
       shadow: 'shadow-black/30',
       headerTextBg: 'bg-white/5',
-      iconBg: 'bg-white/10',
-      border: 'border-white/10',
-      badgeBg: 'bg-blue-900/30',
-      tagText: 'text-blue-300',
     },
     light: {
       bgGradient: 'bg-gradient-to-b from-[#f0f4f8] to-[#e6eef5]',
@@ -466,10 +730,6 @@ const Hero = () => {
       tabActiveBorder: 'border-blue-200',
       shadow: 'shadow-gray-300/30',
       headerTextBg: 'bg-blue-50',
-      iconBg: 'bg-gray-100',
-      border: 'border-gray-200',
-      badgeBg: 'bg-blue-50',
-      tagText: 'text-blue-600',
     }
   };
 
@@ -548,21 +808,88 @@ const Hero = () => {
     };
   }, [isMobile]);
 
+  // Handle text input submission
+  const handleTextInputSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!textInputValue.trim()) return;
+    
+    // Add the user message to the conversation only once
+    setConversation(prev => [...prev, { from: 'user', text: textInputValue }]);
+    
+    // Ensure text input is hidden to prevent double submissions
+    setShowTextInput(false);
+    
+    // Process based on current text input field
+    switch (textInputField) {
+      case 'name':
+      case 'email':
+      case 'company':
+        processUserInfo();
+        break;
+      case 'projectGoals':
+        // Save project goals and proceed to project nature
+        setClientInfo(prev => ({ ...prev, projectGoals: textInputValue }));
+        processProjectNature();
+        break;
+      case 'projectNature':
+        processProjectNature();
+        break;
+      case 'country':
+        processCountry();
+        break;
+      case 'inspirationLinks':
+        processInspiration();
+        break;
+    }
+  };
+
   return (
-    <section className={`w-full py-16 md:py-24 px-6 md:px-12 relative ${ts.bgGradient} ${isMobile && showOptions ? 'pb-32' : ''}`}>
+    <section className={`w-full h-screen flex items-center justify-center px-4 md:px-8 lg:px-12 relative ${ts.bgGradient} overflow-hidden`}>
+      {/* Add burning cursor style and mobile scrollbar styling */}
+      <style jsx global>{`
+        @keyframes cursor-flame {
+          0% { caret-color: #ff5722; box-shadow: 0 0 5px rgba(255, 87, 34, 0.5) inset; }
+          25% { caret-color: #ff9800; box-shadow: 0 0 8px rgba(255, 152, 0, 0.5) inset; }
+          50% { caret-color: #ff5722; box-shadow: 0 0 5px rgba(255, 87, 34, 0.5) inset; }
+          75% { caret-color: #ff9800; box-shadow: 0 0 8px rgba(255, 152, 0, 0.6) inset; }
+          100% { caret-color: #ff5722; box-shadow: 0 0 5px rgba(255, 87, 34, 0.5) inset; }
+        }
+        
+        .burning-cursor {
+          caret-color: #ff5722;
+          caret-shape: block;
+          animation: cursor-flame 1.5s infinite;
+          transition: all 0.3s ease;
+        }
+        
+        .burning-cursor:focus {
+          box-shadow: 0 0 0 2px rgba(255, 87, 34, 0.25);
+          border-color: #ff5722 !important;
+        }
+        
+        /* Mobile scrollbar styling */
+        .mobile-options::-webkit-scrollbar {
+          display: none;
+        }
+        
+        .mobile-options.active {
+          cursor: grabbing;
+        }
+      `}</style>
+      
       {/* Subtle background elements */}
-      <div className="absolute top-0 left-0 w-full h-64 bg-blue-500/5 blur-[100px] z-0"></div>
-      <div className="absolute bottom-0 right-0 w-64 h-64 bg-indigo-500/5 blur-[100px] z-0"></div>
+      <div className="absolute top-0 left-0 w-full h-64 bg-blue-500/3 blur-[150px] z-0"></div>
+      <div className="absolute bottom-0 right-0 w-64 h-64 bg-indigo-500/3 blur-[150px] z-0"></div>
       
       {/* Theme toggle */}
-      <div className="absolute top-6 right-6 z-20">
+      <div className="absolute top-4 right-4 z-20">
         <button 
           onClick={toggleTheme}
-          className={`p-2.5 rounded-full ${ts.panelBg} ${ts.panelBorder} border flex items-center justify-center transition-all duration-300 ${ts.shadow}`}
+          className={`p-2 rounded-full ${ts.panelBg} ${ts.panelBorder} border flex items-center justify-center transition-all duration-300 ${ts.shadow}`}
           aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
         >
           {theme === 'dark' ? (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M12 18C15.3137 18 18 15.3137 18 12C18 8.68629 15.3137 6 12 6C8.68629 6 6 8.68629 6 12C6 15.3137 8.68629 18 12 18Z" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               <path d="M12 2V4" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
               <path d="M12 20V22" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
@@ -574,291 +901,312 @@ const Hero = () => {
               <path d="M17.66 6.34L19.07 4.93" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           ) : (
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="#1E293B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           )}
         </button>
       </div>
       
-      {/* Main content area */}
-      <div className="relative z-10 max-w-7xl mx-auto">
-        {/* Hero headline */}
-        <div className="mb-20 text-center">
-          <div className="flex justify-center mb-6">
-            <img src="/LwaziNF.png" alt="Omeru Digital Logo" className="w-24 h-24" />
-          </div>
-          <div className={`mb-4 inline-block px-3 py-1 ${ts.headerTextBg} rounded-full ${ts.textSecondary} text-xs uppercase tracking-wider`}>Next-Gen Digital Solutions</div>
-          <h1 className={`text-6xl md:text-8xl font-display font-bold ${ts.textPrimary} mb-6 tracking-tight`}>
+      {/* Main content container */}
+      <div className="relative z-10 w-full max-w-6xl mx-auto flex flex-col">
+        {/* Hero headline - more subtle */}
+        <div className="mb-6 md:mb-8 text-center">
+          <div className={`mb-2 inline-block px-2.5 py-0.5 ${ts.headerTextBg} rounded-full ${ts.textSecondary} text-xs uppercase tracking-wider`}>Next-Gen Digital Solutions</div>
+          <h1 className={`text-4xl md:text-6xl font-display font-bold ${ts.textPrimary} mb-2 tracking-tight`}>
             OMERU PRO
-            <span className="inline-flex items-center justify-center ml-3 bg-gradient-to-r from-blue-600 to-blue-400 text-white text-sm px-3 py-1 rounded-md align-top mt-6">
+            <span className="inline-flex items-center justify-center ml-2 bg-gradient-to-r from-blue-600 to-blue-400 text-white text-xs px-2 py-0.5 rounded align-top mt-4">
               v1.0
             </span>
           </h1>
-          <div className={`${ts.textSecondary} uppercase tracking-widest text-sm mt-3 font-light`}>
+          <div className={`${ts.textSecondary} uppercase tracking-widest text-xs font-light opacity-80`}>
             MULTIPURPOSE DIGITAL ECOSYSTEM
           </div>
         </div>
         
-        {/* Main content area */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+        {/* Main content area with fixed card heights */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
           {/* Left panel */}
-          <div className={`${ts.panelBg} rounded-2xl p-6 ${ts.panelBorder} border min-h-[450px] md:h-[500px] flex flex-col relative overflow-hidden shadow-xl ${ts.shadow} ${isMobile ? 'md:block hidden' : ''}`}>
-            <div className="absolute inset-0 bg-gradient-radial from-white/5 to-transparent opacity-30" style={{ background: 'radial-gradient(circle at 50% 0%, rgba(255,255,255,0.08), transparent 70%)' }}></div>
+          <div className={`${ts.panelBg} rounded-xl p-3 md:p-4 ${ts.panelBorder} border min-h-[400px] md:h-[460px] flex flex-col relative overflow-hidden shadow-lg ${ts.shadow} ${isMobile ? 'md:block hidden' : ''}`}>
+            <div className="absolute inset-0 bg-gradient-radial from-white/5 to-transparent opacity-20" style={{ background: 'radial-gradient(circle at 50% 0%, rgba(255,255,255,0.05), transparent 70%)' }}></div>
             
-            <div className="relative z-10">
-              <div className={`p-4 ${ts.headingBg} rounded-xl mb-6 ${ts.panelBorder} border shadow-lg ${ts.shadow}`}>
-                <div className="flex items-center mb-3">
-                  <div className="w-7 h-7 rounded-full bg-blue-600/20 flex items-center justify-center overflow-hidden">
-                    <img src="/LwaziNF.png" alt="" className="w-4 h-4" />
+            <div className={`flex items-center justify-between mb-3 pb-2 border-b ${ts.panelBorder}`}>
+              <div className="flex items-center">
+                <div className={`w-1.5 h-1.5 ${ts.indicatorBg} rounded-full mr-2`}></div>
+                <span className={`${ts.textSecondary} text-xs`}>ASSISTANT</span>
+              </div>
+              <div className="flex space-x-1">
+                <div className={`w-1 h-1 ${ts.dotInactiveBg} rounded-full`}></div>
+                <div className={`w-1 h-1 ${ts.dotInactiveBg} rounded-full`}></div>
+                <div className={`w-1 h-1 ${ts.dotInactiveBg} rounded-full`}></div>
+              </div>
+            </div>
+            
+            <div className="relative z-10 flex flex-col h-full">
+              <div className={`p-3 ${ts.headingBg} rounded-lg mb-4 ${ts.panelBorder} border shadow-md ${ts.shadow}`}>
+                <div className="flex items-center mb-2">
+                  <div className="w-6 h-6 rounded-full bg-blue-600/20 flex items-center justify-center">
+                    <span className="text-blue-400 text-xs font-medium">O</span>
                   </div>
                   <span className={`ml-2 ${ts.textPrimary} text-sm font-medium`}>omeru assistant</span>
                 </div>
                 <p className={`${ts.textSecondary} text-sm`}>How can I help with your digital ecosystem today?</p>
               </div>
               
-              {/* Options - Desktop version only */}
-              {currentStage === 'initial' && !isMobile && (
-                <div className="space-y-2.5">
-                  {Object.keys(serviceCategories).map((key) => (
-                    <button
-                      key={key}
-                      onClick={() => handleOptionSelect(key)}
-                      className={`w-full p-3 rounded-xl ${ts.inputBg} ${ts.inputBgHover} ${ts.inputBorderHover} ${ts.textSecondary} hover:${ts.textPrimary} text-sm text-left flex items-center transition-all duration-200 ease-out ${ts.inputBorder} border shadow-sm ${ts.shadow}`}
-                    >
-                      <div className="w-4 h-4 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 mr-3 flex items-center justify-center">
-                        <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
-                      </div>
-                      {serviceCategories[key as keyof typeof serviceCategories].label}
-                    </button>
-                  ))}
-                </div>
-              )}
-              
-              {/* Dynamic options for other stages - Desktop version only */}
-              {currentStage !== 'initial' && showOptions && !isMobile && (
-                <div className="space-y-2.5">
-                  {getOptions().map((option) => (
-                    <button
-                      key={option.value}
-                      onClick={() => handleOptionSelect(option.value)}
-                      className={`w-full p-3 rounded-xl ${ts.inputBg} ${ts.inputBgHover} ${ts.inputBorderHover} ${ts.textSecondary} hover:${ts.textPrimary} text-sm text-left flex items-center transition-all duration-200 ease-out ${ts.inputBorder} border shadow-sm ${ts.shadow}`}
-                    >
-                      <div className="w-4 h-4 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 mr-3 flex items-center justify-center">
-                        <div className="w-1.5 h-1.5 bg-white rounded-full"></div>
-                      </div>
-                      {option.label}
-                    </button>
-                  ))}
-                </div>
-              )}
-              
-              {/* Typing indicator */}
-              {isTyping && (
-                <div className="flex items-center mt-3 ml-2 group">
-                  <div className="flex-shrink-0 mr-2">
-                    <div className={`w-6 h-6 rounded-full ${ts.iconBg} flex items-center justify-center overflow-hidden border ${ts.border} ${styles.avatarPulse}`}>
-                      <img src="/LwaziNF.png" alt="" className="w-4 h-4" />
-                    </div>
+              {/* Options - Desktop version only with overflow scrolling */}
+              <div className="overflow-y-auto flex-grow pr-1" style={{ scrollbarWidth: 'thin', scrollbarColor: 'rgba(255,255,255,0.1) transparent' }}>
+                {currentStage === 'initial' && !isMobile && (
+                  <div className="space-y-2">
+                    {Object.keys(serviceCategories).map((key) => (
+                      <button
+                        key={key}
+                        onClick={() => handleOptionSelect(key)}
+                        className={`w-full p-2 rounded-lg ${ts.inputBg} ${ts.inputBgHover} ${ts.inputBorderHover} ${ts.textSecondary} hover:${ts.textPrimary} text-sm text-left flex items-center transition-all duration-200 ease-out ${ts.inputBorder} border shadow-sm ${ts.shadow}`}
+                      >
+                        <div className="w-3.5 h-3.5 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 mr-2.5 flex items-center justify-center">
+                          <div className="w-1 h-1 bg-white rounded-full"></div>
+                        </div>
+                        {serviceCategories[key as keyof typeof serviceCategories].label}
+                      </button>
+                    ))}
                   </div>
-                  <div className={`p-3 rounded-xl ${ts.messageBg} ${ts.messageBorder} border ${ts.shadow} inline-flex items-center`}>
-                    <div className={styles.typingIndicator}>
-                      <div className={`${styles.typingDot} ${ts.indicatorBg}`}></div>
-                      <div className={`${styles.typingDot} ${ts.indicatorBg}`}></div>
-                      <div className={`${styles.typingDot} ${ts.indicatorBg}`}></div>
-                    </div>
-                    <span className={`ml-2 text-xs opacity-70 ${ts.textSecondary} hidden group-hover:inline`}>Omeru is typing...</span>
+                )}
+                
+                {/* Dynamic options for other stages - Desktop version only */}
+                {currentStage !== 'initial' && showOptions && !isMobile && (
+                  <div className="space-y-2">
+                    {getOptions().map((option) => (
+                      <button
+                        key={option.value}
+                        onClick={() => handleOptionSelect(option.value)}
+                        className={`w-full p-2 rounded-lg ${ts.inputBg} ${ts.inputBgHover} ${ts.inputBorderHover} ${ts.textSecondary} hover:${ts.textPrimary} text-sm text-left flex items-center transition-all duration-200 ease-out ${ts.inputBorder} border shadow-sm ${ts.shadow}`}
+                      >
+                        <div className="w-3.5 h-3.5 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 mr-2.5 flex items-center justify-center">
+                          <div className="w-1 h-1 bg-white rounded-full"></div>
+                        </div>
+                        {option.label}
+                      </button>
+                    ))}
                   </div>
-                </div>
-              )}
+                )}
+              </div>
+              
+              {/* Action button or Text Input */}
+              <div className="mt-3">
+                {showTextInput ? (
+                  <form onSubmit={handleTextInputSubmit} className="flex w-full">
+                    <input
+                      ref={textInputRef}
+                      type={textInputField === 'email' ? 'email' : 'text'}
+                      value={textInputValue}
+                      onChange={(e) => setTextInputValue(e.target.value)}
+                      placeholder={textInputPlaceholder}
+                      className={`flex-1 px-4 py-2 rounded-l-lg border ${ts.inputBorder} ${ts.inputBg} ${ts.textPrimary} focus:outline-none text-sm burning-cursor`}
+                      autoFocus
+                    />
+                    <button 
+                      type="submit"
+                      className={`px-4 py-2 rounded-r-lg bg-gradient-to-r ${ts.buttonGradient} ${ts.buttonHoverGradient} text-white text-sm font-medium shadow-md shadow-blue-900/10 ${ts.buttonBorder} border`}
+                    >
+                      Send
+                    </button>
+                  </form>
+                ) : (
+                  <button 
+                    className={`w-full py-2 px-4 rounded-lg bg-gradient-to-r ${ts.buttonGradient} ${ts.buttonHoverGradient} text-white text-sm font-medium transition-all duration-200 shadow-md shadow-blue-900/10 ${ts.buttonBorder} border`}
+                    onClick={() => {
+                      if (!aiReady) {
+                        setAiReady(true);
+                      }
+                      
+                      // Always start conversation when button is clicked, regardless of aiReady state
+                      // Reset conversation
+                      setConversation([]);
+                      setSelectedService(null);
+                      setClientInfo({
+                        name: '',
+                        email: '',
+                        company: '',
+                        country: '',
+                        projectGoals: '',
+                        projectNature: '',
+                        inspirationLinks: ''
+                      });
+                      setCurrentStage('initial');
+                      startConversation();
+                    }}
+                  >
+                    {conversation.length === 0 ? "Connect with Omeru" : "Start Over"}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+          
+          {/* Middle panel - chat interaction with fixed height */}
+          <div className={`${ts.panelBg} rounded-xl p-3 md:p-4 ${ts.panelBorder} border min-h-[400px] md:h-[460px] flex flex-col relative overflow-hidden shadow-lg ${ts.shadow}`}>
+            <div className="absolute inset-0 bg-gradient-radial from-white/5 to-transparent opacity-20" style={{ background: 'radial-gradient(circle at 50% 0%, rgba(255,255,255,0.05), transparent 70%)' }}></div>
+            
+            <div className={`flex items-center justify-between mb-3 pb-2 border-b ${ts.panelBorder}`}>
+              <div className="flex items-center">
+                <div className={`w-1.5 h-1.5 ${ts.indicatorBg} rounded-full mr-2`}></div>
+                <span className={`${ts.textSecondary} text-xs`}>CONVERSATION</span>
+              </div>
+              <div className="flex space-x-1">
+                <div className={`w-1 h-1 ${ts.dotInactiveBg} rounded-full`}></div>
+                <div className={`w-1 h-1 ${ts.dotInactiveBg} rounded-full`}></div>
+                <div className={`w-1 h-1 ${ts.dotInactiveBg} rounded-full`}></div>
+              </div>
             </div>
             
-            {/* Action button */}
-            <div className="mt-auto">
-              <button 
-                className={`w-full py-3 px-4 rounded-xl bg-gradient-to-r ${ts.buttonGradient} ${ts.buttonHoverGradient} text-white text-sm font-medium transition-all duration-200 shadow-lg shadow-blue-900/20 ${ts.buttonBorder} border`}
-                onClick={() => {
-                  if (!aiReady) {
-                    setAiReady(true);
-                    startConversation();
-                  }
+            {/* Adjusted conversation container to handle scrollbar better */}
+            <div className="relative z-10 flex-1 overflow-hidden">
+              <div 
+                className="h-full overflow-y-auto pr-3 pb-2" 
+                style={{ 
+                  scrollbarWidth: 'thin', 
+                  scrollbarColor: 'rgba(255,255,255,0.1) transparent',
+                  marginRight: '-8px', // Compensate for scrollbar width
+                  paddingRight: '8px'   // Add padding to avoid content being cut off
                 }}
               >
-                {aiReady ? "Start Over" : "Connect with Omeru"}
-              </button>
-            </div>
-          </div>
-          
-          {/* Middle panel - chat interaction */}
-          <div className={`${ts.panelBg} rounded-2xl p-6 ${ts.panelBorder} border min-h-[450px] md:h-[500px] flex flex-col relative overflow-hidden shadow-xl ${ts.shadow} ${styles.chatContainer}`}>
-            <div className="absolute inset-0 bg-gradient-radial from-white/5 to-transparent opacity-30" style={{ background: 'radial-gradient(circle at 50% 0%, rgba(255,255,255,0.08), transparent 70%)' }}></div>
-            
-            <div className={`flex items-center justify-between mb-4 pb-3 border-b ${ts.panelBorder}`}>
-              <div className="flex items-center">
-                <div className={`flex items-center justify-center w-5 h-5 ${ts.iconBg} rounded-full mr-2 overflow-hidden border ${ts.border}`}>
-                  <img src="/LwaziNF.png" alt="" className="w-3 h-3" />
-                </div>
-                <div>
-                  <div className="flex items-center">
-                    <span className={`${ts.textPrimary} text-xs font-medium`}>Omeru Assistant</span>
-                    <div className={`ml-2 flex items-center px-1.5 py-0.5 rounded-full ${ts.badgeBg}`}>
-                      <div className={`w-1.5 h-1.5 ${ts.indicatorBg} rounded-full mr-1 animate-pulse`}></div>
-                      <span className={`text-[9px] ${ts.tagText}`}>ONLINE</span>
-                    </div>
-                  </div>
-                  <span className={`${ts.textTertiary} text-[10px]`}>Available 24/7 to assist you</span>
-                </div>
-              </div>
-              <button className={`w-6 h-6 ${ts.iconBg} rounded-full flex items-center justify-center ${ts.border} border hover:opacity-80 transition-opacity`}>
-                <svg className={`w-3 h-3 ${ts.textSecondary}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
-                </svg>
-              </button>
-            </div>
-            
-            <div className={`relative z-10 flex-1 overflow-y-auto pr-2 ${styles.chatContainer}`}>
-              {/* Conversation history */}
-              <div className="space-y-5 py-2">
-                {conversation.map((message, index) => {
-                  // Generate a timestamp for the message
-                  const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                  const isFirstInSequence = index === 0 || conversation[index - 1].from !== message.from;
-                  const isLastInSequence = index === conversation.length - 1 || conversation[index + 1].from !== message.from;
-                  
-                  return (
+                {/* Conversation history */}
+                <div className="space-y-2.5 pr-1">
+                  {conversation.map((message, index) => (
                     <motion.div
                       key={index}
-                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      transition={{ duration: 0.3, type: 'spring', stiffness: 120, damping: 10 }}
-                      className={`flex ${message.from === 'user' ? 'justify-end' : 'justify-start'} relative group`}
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className={`flex ${message.from === 'user' ? 'justify-end' : 'justify-start'}`}
                     >
-                      {/* Avatar - Only show on first message in sequence */}
-                      {message.from === 'ai' && isFirstInSequence && (
-                        <div className="flex-shrink-0 mr-2 mt-1">
-                          <div className={`w-6 h-6 rounded-full ${ts.iconBg} flex items-center justify-center overflow-hidden border ${ts.border} ${styles.avatarPulse}`}>
-                            <img src="/LwaziNF.png" alt="" className="w-4 h-4" />
-                          </div>
-                        </div>
-                      )}
-                      
                       <div 
-                        className={`relative max-w-[85%] p-3.5 ${
+                        className={`max-w-[85%] p-2.5 rounded-lg ${
                           message.from === 'user' 
-                            ? `rounded-t-xl rounded-bl-xl rounded-br-sm bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-lg shadow-blue-900/20 ml-6 ${styles.messageBubbleUser}` 
-                            : `rounded-t-xl rounded-br-xl rounded-bl-sm ${ts.messageBg} ${ts.messageBorder} border ${ts.textPrimary} shadow-md ${ts.shadow} mr-6 ${styles.messageBubbleAi}`
-                        } ${!isLastInSequence ? 'mb-1.5' : ''}`}
+                            ? 'bg-gradient-to-r from-blue-600 to-blue-500 text-white shadow-sm shadow-blue-900/10' 
+                            : `${ts.messageBg} ${ts.messageBorder} border ${ts.textPrimary} shadow-sm ${ts.shadow}`
+                        }`}
                       >
                         <p className="text-sm leading-relaxed">{message.text}</p>
-                        
-                        {/* Timestamp */}
-                        <div className={`absolute ${message.from === 'user' ? 'right-2 -bottom-5' : 'left-2 -bottom-5'} opacity-0 group-hover:opacity-70 transition-opacity text-[10px] ${ts.textTertiary}`}>
-                          {timestamp}
-                        </div>
-                        
-                        {/* Message tail */}
-                        {isLastInSequence && (
-                          <div className={`absolute ${message.from === 'user' ? '-right-2 bottom-0' : '-left-2 bottom-0'}`}>
-                            <div className={`w-2 h-2 ${
-                              message.from === 'user'
-                                ? 'bg-blue-500'
-                                : ts.messageBg
-                            } transform ${message.from === 'user' ? 'rotate-45' : '-rotate-45'}`}
-                            ></div>
-                          </div>
-                        )}
                       </div>
-                      
-                      {/* User Avatar - Only show on first message in sequence */}
-                      {message.from === 'user' && isFirstInSequence && (
-                        <div className="flex-shrink-0 ml-2 mt-1">
-                          <div className={`w-6 h-6 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center overflow-hidden border ${ts.border}`}>
-                            <span className="text-[10px] text-white font-medium">You</span>
-                          </div>
-                        </div>
-                      )}
                     </motion.div>
-                  );
-                })}
-              </div>
-              
-              {/* Welcome message when empty */}
-              {conversation.length === 0 && !isTyping && (
-                <div className="h-full flex items-center justify-center">
-                  <div className="text-center max-w-xs">
+                  ))}
+                  
+                  {/* Typing indicator moved here to show in conversation */}
+                  {isTyping && (
                     <motion.div
-                      className={`w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-blue-600/30 to-indigo-600/20 flex items-center justify-center mb-8 ${ts.panelBorder} border shadow-lg ${ts.shadow}`}
-                      animate={{ scale: [1, 1.05, 1], rotate: [0, 2, 0, -2, 0] }}
-                      transition={{ duration: 5, repeat: Infinity, ease: "easeInOut" }}
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.2 }}
+                      className="flex justify-start"
                     >
-                      <img src="/LwaziNF.png" alt="Omeru Digital" className="w-12 h-12" />
+                      <div className={`py-2 px-3 rounded-lg ${ts.messageBg} ${ts.messageBorder} border ${ts.textPrimary} shadow-sm ${ts.shadow}`}>
+                        <div className="flex space-x-1.5">
+                          <motion.div 
+                            className={`w-1.5 h-1.5 ${ts.indicatorBg} rounded-full`}
+                            animate={{ opacity: [0.4, 1, 0.4], scale: [0.9, 1.1, 0.9] }}
+                            transition={{ duration: 1, repeat: Infinity, delay: 0 }}
+                          />
+                          <motion.div 
+                            className={`w-1.5 h-1.5 ${ts.indicatorBg} rounded-full`}
+                            animate={{ opacity: [0.4, 1, 0.4], scale: [0.9, 1.1, 0.9] }}
+                            transition={{ duration: 1, repeat: Infinity, delay: 0.3 }}
+                          />
+                          <motion.div 
+                            className={`w-1.5 h-1.5 ${ts.indicatorBg} rounded-full`}
+                            animate={{ opacity: [0.4, 1, 0.4], scale: [0.9, 1.1, 0.9] }}
+                            transition={{ duration: 1, repeat: Infinity, delay: 0.6 }}
+                          />
+                        </div>
+                      </div>
                     </motion.div>
-                    <h3 className={`${ts.textPrimary} text-lg font-medium mb-3`}>
-                      Welcome to Omeru Digital
-                    </h3>
-                    <p className={`${ts.textSecondary} text-sm mb-6`}>
-                      I&apos;m your intelligent AI assistant, ready to help you explore our services and find the perfect solution for your needs.
-                    </p>
-                    <div className={`${ts.badgeBg} p-3 rounded-lg inline-block`}>
-                      <p className={`${ts.tagText} text-xs`}>
-                        Select a service from the options to start our conversation
+                  )}
+                </div>
+                
+                {/* Welcome message when empty */}
+                {conversation.length === 0 && !isTyping && (
+                  <div className="h-full flex items-center justify-center">
+                    <div className="text-center max-w-xs mx-auto">
+                      <motion.div
+                        className={`w-16 h-16 mx-auto rounded-full bg-gradient-to-br from-blue-600/20 to-indigo-600/10 flex items-center justify-center mb-5 ${ts.panelBorder} border`}
+                        animate={{ scale: [1, 1.03, 1] }}
+                        transition={{ duration: 3, repeat: Infinity }}
+                      >
+                        <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500/30 to-blue-600/20 flex items-center justify-center">
+                          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M12 22C17.5228 22 22 17.5228 22 12C22 6.47715 17.5228 2 12 2C6.47715 2 2 6.47715 2 12C2 17.5228 6.47715 22 12 22Z" stroke={theme === 'dark' ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)"} strokeWidth="1.5"/>
+                            <path d="M8 12H16" stroke={theme === 'dark' ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)"} strokeWidth="1.5" strokeLinecap="round"/>
+                            <path d="M12 8V16" stroke={theme === 'dark' ? "rgba(255,255,255,0.5)" : "rgba(0,0,0,0.5)"} strokeWidth="1.5" strokeLinecap="round"/>
+                          </svg>
+                        </div>
+                      </motion.div>
+                      <h3 className={`${ts.textPrimary} text-sm font-medium mb-2`}>
+                        Welcome to Omeru Digital Assistant
+                      </h3>
+                      <p className={`${ts.textSecondary} text-xs mb-4`}>
+                        Click "Connect with Omeru" to start a conversation with our AI assistant. We'll help you explore our digital services and find the perfect solution for your needs.
                       </p>
+                      <div className={`px-3 py-2 rounded-md ${ts.inputBg} ${ts.panelBorder} border inline-block`}>
+                        <p className={`${ts.textSecondary} text-xs`}>
+                          Select a service or ask about our capabilities
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              )}
-              
-              {/* End of messages reference point */}
-              <div ref={chatEndRef} className="h-2" />
+                )}
+                
+                {/* End of messages reference point */}
+                <div ref={chatEndRef} className="h-2" />
+              </div>
             </div>
           </div>
           
-          {/* Right panel - visualization */}
-          <div className={`${ts.panelBg} rounded-2xl p-6 ${ts.panelBorder} border min-h-[450px] md:h-[500px] flex flex-col relative overflow-hidden shadow-xl ${ts.shadow}`}>
-            <div className="absolute inset-0 bg-gradient-radial from-white/5 to-transparent opacity-30" style={{ background: 'radial-gradient(circle at 50% 0%, rgba(255,255,255,0.08), transparent 70%)' }}></div>
+          {/* Right panel - visualization with fixed height */}
+          <div className={`${ts.panelBg} rounded-xl p-3 md:p-4 ${ts.panelBorder} border min-h-[400px] md:h-[460px] flex flex-col relative overflow-hidden shadow-lg ${ts.shadow}`}>
+            <div className="absolute inset-0 bg-gradient-radial from-white/5 to-transparent opacity-20" style={{ background: 'radial-gradient(circle at 50% 0%, rgba(255,255,255,0.05), transparent 70%)' }}></div>
             
-            <div className={`flex items-center justify-between mb-4 pb-3 border-b ${ts.panelBorder}`}>
+            <div className={`flex items-center justify-between mb-3 pb-2 border-b ${ts.panelBorder}`}>
               <div className="flex items-center">
-                <div className={`w-2 h-2 ${ts.indicatorBg} rounded-full mr-2`}></div>
+                <div className={`w-1.5 h-1.5 ${ts.indicatorBg} rounded-full mr-2`}></div>
                 <span className={`${ts.textSecondary} text-xs`}>SERVICE DETAILS</span>
               </div>
               <div className="flex space-x-1">
-                <div className={`w-1.5 h-1.5 ${ts.dotInactiveBg} rounded-full`}></div>
-                <div className={`w-1.5 h-1.5 ${ts.dotInactiveBg} rounded-full`}></div>
-                <div className={`w-1.5 h-1.5 ${ts.dotInactiveBg} rounded-full`}></div>
+                <div className={`w-1 h-1 ${ts.dotInactiveBg} rounded-full`}></div>
+                <div className={`w-1 h-1 ${ts.dotInactiveBg} rounded-full`}></div>
+                <div className={`w-1 h-1 ${ts.dotInactiveBg} rounded-full`}></div>
               </div>
             </div>
             
-            <div className="relative z-10 h-full flex items-center justify-center">
+            <div className="relative z-10 h-full flex items-center justify-center overflow-y-auto">
               {selectedService ? (
-                <div className="text-center">
-                  <div className={`w-20 h-20 mx-auto rounded-full bg-gradient-to-br from-blue-600/20 to-indigo-600/10 flex items-center justify-center mb-6 ${ts.panelBorder} border`}>
-                    <div className={`w-10 h-10 ${ts.inputBg} rounded-md flex items-center justify-center`}>
-                      <span className="text-blue-400 text-xl font-medium">O</span>
+                <div className="text-center py-4">
+                  <div className={`w-14 h-14 mx-auto rounded-full bg-gradient-to-br from-blue-600/10 to-indigo-600/5 flex items-center justify-center mb-4 ${ts.panelBorder} border`}>
+                    <div className={`w-6 h-6 ${ts.inputBg} rounded-md flex items-center justify-center`}>
+                      <span className="text-blue-400 text-xs font-medium">O</span>
                     </div>
                   </div>
-                  <p className={`${ts.textPrimary} font-medium text-lg mb-2`}>
+                  <p className={`${ts.textPrimary} font-medium text-base mb-2`}>
                     {selectedService && serviceCategories[selectedService as keyof typeof serviceCategories].label}
                   </p>
-                  <p className={`${ts.textSecondary} text-sm max-w-[250px] mx-auto`}>
+                  <p className={`${ts.textSecondary} text-xs max-w-[220px] mx-auto opacity-80`}>
                     Streamlined solutions designed to transform your business operations and enhance digital presence
                   </p>
                   
-                  <div className={`mt-8 ${ts.timelineBg} p-4 rounded-lg ${ts.panelBorder} border`}>
-                    <div className="flex items-center justify-between mb-3">
+                  <div className={`mt-5 ${ts.timelineBg} p-2.5 rounded-lg ${ts.panelBorder} border`}>
+                    <div className="flex items-center justify-between mb-2">
                       <span className={`${ts.textSecondary} text-xs`}>PROJECT TIMELINE</span>
                       <span className="text-blue-400 text-xs">4-6 weeks</span>
                     </div>
-                    <div className={`h-1.5 ${theme === 'dark' ? 'bg-white/10' : 'bg-gray-200'} rounded-full overflow-hidden`}>
+                    <div className={`h-1 ${theme === 'dark' ? 'bg-white/10' : 'bg-gray-200'} rounded-full overflow-hidden`}>
                       <div className={`h-full w-[75%] bg-gradient-to-r ${ts.timelineFill} rounded-full`}></div>
                     </div>
                   </div>
                   
-                  <div className="mt-6 flex justify-center space-x-2">
+                  <div className="mt-3 flex justify-center space-x-1.5">
                     {[1, 2, 3].map((dot) => (
                       <div 
                         key={dot} 
-                        className={`w-2 h-2 rounded-full ${
+                        className={`w-1 h-1 rounded-full ${
                           dot === 1 ? ts.dotActiveBg : ts.dotInactiveBg
                         }`}
                       ></div>
@@ -867,26 +1215,26 @@ const Hero = () => {
                 </div>
               ) : (
                 <div className="text-center">
-                  <svg className={`w-16 h-16 mx-auto mb-6 ${theme === 'dark' ? 'text-white/10' : 'text-gray-300'}`} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <svg className={`w-12 h-12 mx-auto mb-4 ${theme === 'dark' ? 'text-white/10' : 'text-gray-300'}`} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path d="M9 12H15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                     <path d="M12 9L12 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                     <path d="M3 12C3 4.5885 4.5885 3 12 3C19.4115 3 21 4.5885 21 12C21 19.4115 19.4115 21 12 21C4.5885 21 3 19.4115 3 12Z" stroke="currentColor" strokeWidth="1.5"/>
                   </svg>
-                  <p className={`${ts.textTertiary} text-sm`}>Select a service to view details</p>
-                  <p className={`${theme === 'dark' ? 'text-white/30' : 'text-gray-400'} text-xs mt-2`}>Comprehensive information will appear here</p>
+                  <p className={`${ts.textTertiary} text-xs`}>Select a service to view details</p>
+                  <p className={`${theme === 'dark' ? 'text-white/30' : 'text-gray-400'} text-xs mt-1 opacity-70`}>Information will appear here</p>
                 </div>
               )}
             </div>
           </div>
         </div>
         
-        {/* Service categories - Desktop */}
-        <div className="mt-16 hidden md:flex justify-center md:items-center flex-wrap md:flex-nowrap gap-4 md:gap-0 md:space-x-10">
+        {/* Service categories - Desktop - at bottom */}
+        <div className="mt-4 mb-4 hidden md:flex justify-center md:items-center flex-wrap md:flex-nowrap gap-2 md:gap-0 md:space-x-6">
           {Object.keys(serviceCategories).map((key) => (
             <button
               key={key}
               onClick={() => setActiveTab(key)}
-              className={`text-sm px-4 py-2 rounded-lg transition-all duration-200 ${
+              className={`text-xs px-2.5 py-1 rounded-md transition-all duration-200 ${
                 activeTab === key
                   ? `${ts.tabActiveBg} ${ts.textPrimary} shadow-sm ${ts.shadow} ${ts.tabActiveBorder} border`
                   : `${ts.textTertiary} hover:${ts.textSecondary}`
@@ -899,73 +1247,70 @@ const Hero = () => {
       </div>
       
       {/* Mobile options UI fixed at bottom */}
-      {isMobile && showOptions && (
+      {isMobile && (showOptions || showTextInput) && (
         <div className="fixed bottom-0 left-0 right-0 z-50 w-full">
           {/* Current question display */}
-          <div className={`${ts.panelBg} p-3 ${ts.panelBorder} border-t border-x w-full ${ts.textPrimary} text-center font-medium text-sm shadow-lg ${ts.shadow}`}>
+          <div className={`${ts.panelBg} p-2 ${ts.panelBorder} border-t border-x w-full ${ts.textPrimary} text-center font-medium text-xs shadow-md ${ts.shadow}`}>
             {currentQuestion}
-            {isTyping && (
-              <div className="flex justify-center space-x-1.5 mt-2">
-                <motion.div 
-                  className={`w-1.5 h-1.5 ${ts.indicatorBg} rounded-full`}
-                  animate={{ opacity: [0.4, 1, 0.4], scale: [0.9, 1.1, 0.9] }}
-                  transition={{ duration: 1, repeat: Infinity, delay: 0 }}
-                />
-                <motion.div 
-                  className={`w-1.5 h-1.5 ${ts.indicatorBg} rounded-full`}
-                  animate={{ opacity: [0.4, 1, 0.4], scale: [0.9, 1.1, 0.9] }}
-                  transition={{ duration: 1, repeat: Infinity, delay: 0.3 }}
-                />
-                <motion.div 
-                  className={`w-1.5 h-1.5 ${ts.indicatorBg} rounded-full`}
-                  animate={{ opacity: [0.4, 1, 0.4], scale: [0.9, 1.1, 0.9] }}
-                  transition={{ duration: 1, repeat: Infinity, delay: 0.6 }}
-                />
-              </div>
-            )}
           </div>
           
-          {/* Scrollable options */}
-          <div 
-            ref={optionsScrollRef}
-            className={`${ts.panelBg} p-3 ${ts.panelBorder} border-t border-x border-b overflow-x-auto flex space-x-3 pb-6 pt-2 px-4 whitespace-nowrap`}
-            style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', touchAction: 'pan-x' }}
-          >
-            <style jsx>{`
-              div::-webkit-scrollbar {
-                display: none;
-              }
-              div.active {
-                cursor: grabbing;
-              }
-            `}</style>
-            
-            {getOptions().map((option) => (
-              <button
-                key={option.value}
-                onClick={() => handleOptionSelect(option.value)}
-                className={`flex-shrink-0 px-4 py-3 rounded-xl ${ts.inputBg} ${ts.inputBgHover} ${ts.inputBorderHover} ${ts.textSecondary} hover:${ts.textPrimary} text-sm text-center min-w-[150px] transition-all duration-200 ease-out ${ts.inputBorder} border shadow-sm ${ts.shadow}`}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-          
-          {/* Optional: Add small indicator dots to show swipeable content */}
-          <div className="flex justify-center mt-2 pb-1">
-            <div className="flex space-x-1">
-              {getOptions().length > 0 && getOptions().slice(0, Math.min(5, getOptions().length)).map((_, i) => (
-                <div 
-                  key={i} 
-                  className={`w-1.5 h-1.5 rounded-full ${i === 0 ? ts.dotActiveBg : ts.dotInactiveBg}`}
-                ></div>
-              ))}
+          {/* Scrollable options or text input based on state */}
+          {showTextInput ? (
+            <div className={`${ts.panelBg} p-3 ${ts.panelBorder} border-t border-x border-b`}>
+              <form onSubmit={handleTextInputSubmit} className="flex w-full">
+                <input
+                  ref={textInputRef}
+                  type={textInputField === 'email' ? 'email' : 'text'}
+                  value={textInputValue}
+                  onChange={(e) => setTextInputValue(e.target.value)}
+                  placeholder={textInputPlaceholder}
+                  className={`flex-1 px-4 py-2 rounded-l-md border ${ts.inputBorder} ${ts.inputBg} ${ts.textPrimary} focus:outline-none burning-cursor`}
+                  autoFocus
+                />
+                <button 
+                  type="submit"
+                  className={`px-4 py-2 rounded-r-md bg-gradient-to-r ${ts.buttonGradient} ${ts.buttonHoverGradient} text-white font-medium`}
+                >
+                  Send
+                </button>
+              </form>
             </div>
-          </div>
+          ) : (
+            <>
+              {/* Scrollable options */}
+              <div 
+                ref={optionsScrollRef}
+                className={`${ts.panelBg} p-2 ${ts.panelBorder} border-t border-x border-b overflow-x-auto flex space-x-2 pb-3 pt-1.5 px-3 whitespace-nowrap mobile-options`}
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none', touchAction: 'pan-x' }}
+              >
+                {getOptions().map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => handleOptionSelect(option.value)}
+                    className={`flex-shrink-0 px-2.5 py-2 rounded-lg ${ts.inputBg} ${ts.inputBgHover} ${ts.inputBorderHover} ${ts.textSecondary} hover:${ts.textPrimary} text-xs text-center min-w-[130px] transition-all duration-200 ease-out ${ts.inputBorder} border shadow-sm ${ts.shadow}`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+              
+              {/* Optional: Add small indicator dots to show swipeable content */}
+              <div className="flex justify-center mt-1 pb-0.5">
+                <div className="flex space-x-0.5">
+                  {getOptions().length > 0 && getOptions().slice(0, Math.min(5, getOptions().length)).map((_, i) => (
+                    <div 
+                      key={i} 
+                      className={`w-0.5 h-0.5 rounded-full ${i === 0 ? ts.dotActiveBg : ts.dotInactiveBg}`}
+                    ></div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
     </section>
   );
 };
 
-export default Hero; 
+export default Hero;

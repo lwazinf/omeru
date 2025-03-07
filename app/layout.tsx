@@ -1,13 +1,17 @@
 import './globals.css';
-import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import ThemeProvider from './components/ThemeProvider';
+import FacebookPixel from './components/FacebookPixel';
+import { generateMetadata as baseMetadata } from './lib/metadata';
 
-const inter = Inter({ subsets: ['latin'] });
+const inter = Inter({ 
+  subsets: ['latin'],
+  display: 'swap', // Improves page loading performance
+  variable: '--font-inter'
+});
 
-export const metadata: Metadata = {
-  title: 'Omeru Digital - Modern Business Solutions',
-  description: 'Custom digital solutions for modern businesses through app development, design, and strategic integrations.',
-};
+// Generate metadata for the layout
+export const metadata = baseMetadata({});
 
 export default function RootLayout({
   children,
@@ -15,9 +19,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="en">
+    <html lang="en" className={inter.variable}>
       <body className={`${inter.className} bg-[#111111] text-white antialiased`}>
-        {children}
+        <ThemeProvider>
+          <FacebookPixel />
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );

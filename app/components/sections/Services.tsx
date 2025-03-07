@@ -87,8 +87,6 @@ const Services = () => {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
   // Active service for mobile view
   const [activeService, setActiveService] = useState<string>(services[0].id);
-  // State for viewport width
-  const [isMobile, setIsMobile] = useState<boolean>(false);
   
   // Effect to detect theme from body class
   useEffect(() => {
@@ -117,22 +115,6 @@ const Services = () => {
     return () => observer.disconnect();
   }, []);
   
-  // Detect if on mobile device
-  useEffect(() => {
-    const checkIfMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    // Set initial value
-    checkIfMobile();
-    
-    // Add event listener for window resize
-    window.addEventListener('resize', checkIfMobile);
-    
-    // Clean up
-    return () => window.removeEventListener('resize', checkIfMobile);
-  }, []);
-
   // Theme-based style variables
   const themeStyles = {
     dark: {
@@ -269,20 +251,9 @@ const Services = () => {
       <div className="absolute top-0 left-0 w-full h-64 bg-blue-500/5 blur-[100px] z-0"></div>
       <div className="absolute bottom-0 right-0 w-64 h-64 bg-indigo-500/5 blur-[100px] z-0"></div>
       
-      {/* Logo decorative element */}
-      <div className="absolute top-10 right-5 md:right-10 opacity-5 z-0">
-        <img src="/LwaziNF.png" alt="Omeru Digital" className="w-32 md:w-40" />
-      </div>
-      <div className="absolute bottom-10 left-5 md:left-10 opacity-5 z-0 transform rotate-180">
-        <img src="/LwaziNF.png" alt="Omeru Digital" className="w-32 md:w-40" />
-      </div>
-      
       <div className="max-w-7xl mx-auto px-6 md:px-12 relative z-10">
-        {/* Section header with logo */}
+        {/* Section header */}
         <div className="text-center mb-16">
-          <div className="flex justify-center items-center mb-6">
-            <img src="/LwaziNF.png" alt="Omeru Digital" className="w-16 h-16 mb-4" />
-          </div>
           <div className="inline-flex items-center mb-4">
             <div className="h-px w-6 bg-blue-400/40 mr-3"></div>
             <span className={`text-sm uppercase tracking-wider ${ts.tagText}`}>Our Expertise</span>
@@ -420,25 +391,14 @@ const Services = () => {
         </div>
         
         {/* CTA section */}
-        <div className={`mt-16 text-center ${ts.cardBg} border ${ts.border} rounded-xl p-8 shadow-lg ${ts.shadow} ${styles.cardBorderGradient} relative overflow-hidden`}>
-          {/* Small logo in corner */}
-          <div className="absolute top-4 right-4 opacity-10">
-            <img src="/LwaziNF.png" alt="Omeru Digital" className={`w-16 h-16 ${isMobile ? 'hidden' : 'block'}`} />
-          </div>
-          
+        <div className={`mt-16 text-center ${ts.cardBg} border ${ts.border} rounded-xl p-8 shadow-lg ${ts.shadow} ${styles.cardBorderGradient}`}>
           <h3 className={`text-2xl font-bold ${ts.text} mb-4`}>Ready to transform your digital presence?</h3>
           <p className={`${ts.textSecondary} mb-8 max-w-2xl mx-auto`}>
             Our team of experts is ready to help you implement the perfect solution for your business needs.
           </p>
-          
-          <div className="flex items-center justify-center">
-            <button className={`px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-lg shadow-md shadow-blue-900/20 hover:from-blue-500 hover:to-blue-400 transition-all duration-300 ${styles.learnMoreBtn} flex items-center`}>
-              <span className="mr-2">Schedule a Consultation</span>
-              <span className="flex items-center justify-center w-6 h-6">
-                <img src="/LwaziNF.png" alt="" className="w-full h-full" />
-              </span>
-            </button>
-          </div>
+          <button className={`px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white rounded-lg shadow-md shadow-blue-900/20 hover:from-blue-500 hover:to-blue-400 transition-all duration-300 ${styles.learnMoreBtn}`}>
+            Schedule a Consultation
+          </button>
         </div>
       </div>
     </section>

@@ -70,8 +70,8 @@ const Footer = () => {
           {/* Brand */}
           <div className="md:col-span-1">
             <div className="flex items-center mb-4">
-              <div className={`w-8 h-8 rounded-sm ${theme === 'dark' ? 'bg-white/10' : 'bg-[#00452E]/10'} flex items-center justify-center mr-2 overflow-hidden`}>
-                <img src="/LwaziNF.png" alt="" className="w-5 h-5" />
+              <div className={`w-8 h-8 rounded-sm ${theme === 'dark' ? 'bg-white/10' : 'bg-[#00452E]/10'} flex items-center justify-center mr-2`}>
+                <span className={`${ts.text} text-xs font-medium`}>O</span>
               </div>
               <span className={`${ts.text} text-sm`}>omeru digital</span>
             </div>
