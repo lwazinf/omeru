@@ -35,12 +35,12 @@ const FeaturedModel = () => {
   return (
     <section id="featured-model" className="w-full py-24 md:py-32 px-6 md:px-12 relative bg-[#111111]">
       <div className="relative z-10 max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-20">
-          <div className="flex items-center">
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-16 md:mb-20">
+          <div className="flex items-center justify-center md:justify-start">
             <div className="h-px w-12 bg-white/20 mr-4"></div>
             <span className="text-white/60 text-sm uppercase tracking-wider">Featured Solution</span>
           </div>
-          <div className="flex space-x-1">
+          <div className="flex space-x-1 justify-center md:justify-end">
             {[0, 1, 2].map((dot) => (
               <div 
                 key={dot} 
@@ -76,10 +76,13 @@ const FeaturedModel = () => {
             </p>
             
             <div className="flex flex-wrap gap-4 mb-12">
-              <button className="px-5 py-3 bg-blue-500 hover:bg-blue-600 rounded-md text-white text-sm font-medium flex items-center transition-all">
-                Schedule Demo 
+              <a
+                href="#contact"
+                className="px-5 py-3 bg-blue-500 hover:bg-blue-600 rounded-md text-white text-sm font-medium flex items-center transition-all"
+              >
+                Schedule Demo
                 <FontAwesomeIcon icon={faArrowRight} className="ml-2" />
-              </button>
+              </a>
               <button 
                 onClick={() => setShowInfo(!showInfo)}
                 className="px-5 py-3 bg-white/5 hover:bg-white/10 rounded-md text-white/80 text-sm font-medium border border-white/10 transition-all"
@@ -171,7 +174,7 @@ const FeaturedModel = () => {
           </div>
           
           {/* Right side - Visualization */}
-          <div className="grid grid-cols-2 gap-6 h-[500px]">
+          <div className="grid grid-cols-2 gap-6 lg:h-[500px]">
             <div className="space-y-6">
               <motion.div 
                 className="aspect-video bg-[#1A1A1A] rounded-xl overflow-hidden relative cursor-pointer border border-white/5"

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
@@ -78,6 +79,15 @@ const Contact = () => {
           <p className="text-white/70 max-w-2xl mx-auto">
             Ready to transform your business with modular digital solutions? Let&apos;s discuss how we can help you streamline operations and enhance customer experiences.
           </p>
+          <div className="mt-8 inline-flex flex-col sm:flex-row items-center gap-3 px-4 py-3 bg-white/5 border border-white/10 rounded-full text-white/70 text-sm">
+            <span>Prefer a guided project plan first? Start with the assistant above.</span>
+            <Link
+              href="/#"
+              className="px-4 py-2 rounded-full bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium transition-all"
+            >
+              Start Planning
+            </Link>
+          </div>
         </div>
         
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
@@ -271,6 +281,15 @@ const Contact = () => {
                     disabled={formStatus === 'submitting' || formStatus === 'success'}
                     placeholder="Tell us about your project and goals..."
                   ></textarea>
+                </div>
+
+                <div className="mb-6 p-4 bg-white/5 border border-white/10 rounded-lg">
+                  <h4 className="text-white text-sm font-medium mb-2">What happens next</h4>
+                  <ul className="text-white/70 text-xs space-y-2">
+                    <li>• We review your brief and align it with the best-fit service.</li>
+                    <li>• You receive a tailored scope and recommended timeline.</li>
+                    <li>• We confirm your discovery call and next steps.</li>
+                  </ul>
                 </div>
                 
                 <button
