@@ -101,6 +101,21 @@ const omeruPersonalities = {
   }
 };
 
+type Stage =
+  | 'initial'
+  | 'service_selection'
+  | 'project_details'
+  | 'user_info'
+  | 'project_goals'
+  | 'project_nature'
+  | 'project_timeline'
+  | 'project_budget'
+  | 'country'
+  | 'inspiration'
+  | 'booking_prompt'
+  | 'booking'
+  | 'confirmed';
+
 const Hero = () => {
   // State for theme
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
@@ -109,8 +124,9 @@ const Hero = () => {
   
   // Chat state
   const [conversation, setConversation] = useState<Array<{from: 'ai' | 'user', text: string}>>([]);
-  const [currentStage, setCurrentStage] = useState<'initial' | 'service_selection' | 'project_details' | 'user_info' | 'project_goals' | 'project_nature' | 'inspiration' | 'country' | 'booking' | 'confirmed'>('initial');
+  const [currentStage, setCurrentStage] = useState<Stage>('initial');
   const [selectedService, setSelectedService] = useState<string | null>(null);
+  const [selectedSubService, setSelectedSubService] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
   const [omeruPersonality, setOmeruPersonality] = useState<'friendly' | 'professional' | 'technical'>('friendly');
@@ -124,6 +140,8 @@ const Hero = () => {
     country: string;
     projectGoals: string;
     projectNature: string;
+    timeline: string;
+    budget: string;
     inspirationLinks: string;
   }>({
     name: '',
@@ -132,6 +150,8 @@ const Hero = () => {
     country: '',
     projectGoals: '',
     projectNature: '',
+    timeline: '',
+    budget: '',
     inspirationLinks: ''
   });
   const [showTextInput, setShowTextInput] = useState(false);
@@ -197,23 +217,7 @@ const Hero = () => {
           { value: 'proceed_to_user_info', label: 'Proceed to provide my details' },
           { value: 'ask_questions', label: 'I Have More Questions' }
         ];
-      case 'user_info':
-        return [
-          { value: 'proceed_to_project_goals', label: 'Continue' }
-        ];
-      case 'project_goals':
-        return [
-          { value: 'proceed_to_project_nature', label: 'Continue' }
-        ];
-      case 'project_nature':
-        return [
-          { value: 'proceed_to_country', label: 'Continue' }
-        ];
-      case 'country':
-        return [
-          { value: 'proceed_to_inspiration', label: 'Continue' }
-        ];
-      case 'inspiration':
+      case 'booking_prompt':
         return [
           { value: 'proceed_to_booking', label: 'Continue to scheduling' },
           { value: 'skip_booking', label: 'Submit without scheduling a call' }
@@ -313,18 +317,17 @@ const Hero = () => {
     switch (currentStage) {
       case 'initial':
         setSelectedService(value);
+        setSelectedSubService(null);
         processServiceSelection(value, optionLabel);
         break;
       case 'service_selection':
+        setSelectedSubService(optionLabel);
         processSubServiceSelection(value, optionLabel);
         break;
       case 'project_details':
         processProjectDetails(value);
         break;
-      case 'project_goals':
-        processProjectGoals();
-        break;
-      case 'inspiration':
+      case 'booking_prompt':
         if (value === 'proceed_to_booking') {
           const bookingPrompt = omeruPersonalities[omeruPersonality].bookingPrompt;
           setCurrentQuestion(bookingPrompt);
@@ -367,6 +370,7 @@ const Hero = () => {
           // Reset and start over
           setConversation([]);
           setSelectedService(null);
+          setSelectedSubService(null);
           setClientInfo({
             name: '',
             email: '',
@@ -374,6 +378,8 @@ const Hero = () => {
             country: '',
             projectGoals: '',
             projectNature: '',
+            timeline: '',
+            budget: '',
             inspirationLinks: ''
           });
           setCurrentStage('initial');
@@ -388,6 +394,7 @@ const Hero = () => {
           // Clear the conversation
           setConversation([]);
           setSelectedService(null);
+          setSelectedSubService(null);
           setClientInfo({
             name: '',
             email: '',
@@ -395,6 +402,8 @@ const Hero = () => {
             country: '',
             projectGoals: '',
             projectNature: '',
+            timeline: '',
+            budget: '',
             inspirationLinks: ''
           });
         }
@@ -456,8 +465,7 @@ const Hero = () => {
   // Process project details selection
   const processProjectDetails = (value: string) => {
     if (value === 'proceed_to_user_info') {
-      // Transition to collecting user information
-      const promptMessage = "Great! To better prepare for our conversation, could you please share your name?";
+      const promptMessage = "Great! To tailor the plan, could you share your name?";
       setCurrentQuestion(promptMessage);
       
       setIsTyping(true);
@@ -469,11 +477,13 @@ const Hero = () => {
         setIsTyping(false);
         setTextInputField('name');
         setTextInputPlaceholder('Your name');
+        setTextInputValue('');
         setShowTextInput(true);
         setShowOptions(false);
         setCurrentStage('user_info');
-      }, 1500);
+      }, 1200);
     } else if (value === 'ask_questions') {
+      setIsTyping(true);
       setTimeout(() => {
         setConversation(prev => [...prev, { 
           from: 'ai', 
@@ -486,6 +496,34 @@ const Hero = () => {
         }, 500);
       }, 1000);
     }
+  };
+
+  const advanceToTextPrompt = ({
+    promptMessage,
+    field,
+    placeholder,
+    nextStage
+  }: {
+    promptMessage: string;
+    field: keyof typeof clientInfo;
+    placeholder: string;
+    nextStage: Stage;
+  }) => {
+    setCurrentQuestion(promptMessage);
+    setIsTyping(true);
+    setTimeout(() => {
+      setConversation(prev => [...prev, { 
+        from: 'ai', 
+        text: promptMessage
+      }]);
+      setIsTyping(false);
+      setTextInputField(field);
+      setTextInputPlaceholder(placeholder);
+      setTextInputValue('');
+      setShowTextInput(true);
+      setShowOptions(false);
+      setCurrentStage(nextStage);
+    }, 1200);
   };
 
   // Process user information
@@ -508,7 +546,7 @@ const Hero = () => {
         setTextInputPlaceholder('Your email address');
         setTextInputValue('');
         setShowTextInput(true);
-      }, 1500);
+      }, 1200);
     } else if (textInputField === 'email') {
       // Save email and ask for company
       setClientInfo(prev => ({ ...prev, email: textInputValue }));
@@ -527,106 +565,80 @@ const Hero = () => {
         setTextInputPlaceholder('Your company or organization');
         setTextInputValue('');
         setShowTextInput(true);
-      }, 1500);
+      }, 1200);
     } else if (textInputField === 'company') {
-      // Save company and proceed to project goals
       setClientInfo(prev => ({ ...prev, company: textInputValue }));
-      
-      const promptMessage = "Perfect! Now, could you please tell me more about your project goals? What are you hoping to achieve?";
-      setCurrentQuestion(promptMessage);
-      
-      setIsTyping(true);
-      setTimeout(() => {
-        setConversation(prev => [...prev, { 
-          from: 'ai', 
-          text: promptMessage
-        }]);
-        setIsTyping(false);
-        setShowTextInput(false);
-        setShowOptions(true);
-        setCurrentStage('project_goals');
-      }, 1500);
+
+      advanceToTextPrompt({
+        promptMessage: "Perfect! What are the primary goals for this project?",
+        field: 'projectGoals',
+        placeholder: 'Describe the outcomes you want to achieve',
+        nextStage: 'project_goals'
+      });
     }
   };
 
-  // Process project goals
-  const processProjectGoals = () => {
-    // Don't add the user's text message here since we're transitioning 
-    // from a button click, not a text input submission
-    
-    const promptMessage = "Thanks for sharing! Could you elaborate more on the nature of your project? For example, is it a new initiative, a redesign, an expansion of existing systems, etc.?";
-    setCurrentQuestion(promptMessage);
-    
-    setIsTyping(true);
-    setTimeout(() => {
-      setConversation(prev => [...prev, { 
-        from: 'ai', 
-        text: promptMessage
-      }]);
-      setIsTyping(false);
-      setTextInputField('projectGoals');
-      setTextInputPlaceholder('Your project goals');
-      setTextInputValue('');
-      setShowTextInput(true);
-      setShowOptions(false);
-      setCurrentStage('project_nature');
-    }, 1500);
+  const processProjectGoalsInput = () => {
+    setClientInfo(prev => ({ ...prev, projectGoals: textInputValue }));
+    advanceToTextPrompt({
+      promptMessage: "Got it. Is this a brand-new build, a redesign, or an expansion of something existing?",
+      field: 'projectNature',
+      placeholder: 'New build, redesign, or expansion',
+      nextStage: 'project_nature'
+    });
   };
 
-  // Process project nature
-  const processProjectNature = () => {
+  const processProjectNatureInput = () => {
     setClientInfo(prev => ({ ...prev, projectNature: textInputValue }));
-    
-    const promptMessage = "Which country or countries does your business primarily operate in? This helps us understand relevant regulations and market specifics.";
-    setCurrentQuestion(promptMessage);
-    
-    setIsTyping(true);
-    setTimeout(() => {
-      setConversation(prev => [...prev, { 
-        from: 'ai', 
-        text: promptMessage
-      }]);
-      setIsTyping(false);
-      setTextInputField('country');
-      setTextInputPlaceholder('Your country of operation');
-      setTextInputValue('');
-      setShowTextInput(true);
-      setShowOptions(false);
-      setCurrentStage('country');
-    }, 1500);
+    advanceToTextPrompt({
+      promptMessage: "What timeline are you aiming for? (e.g., 4-6 weeks, Q3 launch)",
+      field: 'timeline',
+      placeholder: 'Desired timeline',
+      nextStage: 'project_timeline'
+    });
   };
 
-  // Process country information
-  const processCountry = () => {
+  const processTimelineInput = () => {
+    setClientInfo(prev => ({ ...prev, timeline: textInputValue }));
+    advanceToTextPrompt({
+      promptMessage: "Do you have a budget range in mind? This helps us recommend the right scope.",
+      field: 'budget',
+      placeholder: 'Budget range or flexible',
+      nextStage: 'project_budget'
+    });
+  };
+
+  const processBudgetInput = () => {
+    setClientInfo(prev => ({ ...prev, budget: textInputValue }));
+    advanceToTextPrompt({
+      promptMessage: "Which country or countries do you operate in? We tailor recommendations accordingly.",
+      field: 'country',
+      placeholder: 'Primary country of operation',
+      nextStage: 'country'
+    });
+  };
+
+  const processCountryInput = () => {
     setClientInfo(prev => ({ ...prev, country: textInputValue }));
-    
-    const promptMessage = "Do you have any design inspirations, examples, or references you'd like to share? Feel free to paste any links or describe the style you're looking for.";
-    setCurrentQuestion(promptMessage);
-    
-    setIsTyping(true);
-    setTimeout(() => {
-      setConversation(prev => [...prev, { 
-        from: 'ai', 
-        text: promptMessage
-      }]);
-      setIsTyping(false);
-      setTextInputField('inspirationLinks');
-      setTextInputPlaceholder('Links or descriptions of design inspirations');
-      setTextInputValue('');
-      setShowTextInput(true);
-      setShowOptions(false);
-      setCurrentStage('inspiration');
-    }, 1500);
+    advanceToTextPrompt({
+      promptMessage: "Any design inspirations, references, or products you admire? Links are welcome.",
+      field: 'inspirationLinks',
+      placeholder: 'Links or style notes',
+      nextStage: 'inspiration'
+    });
   };
 
-  // Process inspiration information
-  const processInspiration = () => {
-    setClientInfo(prev => ({ ...prev, inspirationLinks: textInputValue }));
+  const processInspirationInput = () => {
+    setClientInfo(prev => {
+      const updatedInfo = {
+        ...prev,
+        inspirationLinks: textInputValue
+      };
+      saveClientInfo(updatedInfo);
+      return updatedInfo;
+    });
     
-    // Save client information
-    saveClientInfo();
-    
-    const promptMessage = "Thank you for all this valuable information! Would you like to schedule a 15-minute discovery and strategy consultation to discuss your project in more detail?";
+    const promptMessage = "Thank you! Ready to book a 15-minute discovery call to finalize the plan?";
     setCurrentQuestion(promptMessage);
     
     setIsTyping(true);
@@ -638,8 +650,8 @@ const Hero = () => {
       setIsTyping(false);
       setShowTextInput(false);
       setShowOptions(true);
-      setCurrentStage('inspiration');
-    }, 1500);
+      setCurrentStage('booking_prompt');
+    }, 1200);
   };
 
   // Modify processBookingSelection to update current question
@@ -662,15 +674,15 @@ const Hero = () => {
   };
 
   // Add this method to save client info to backend or localStorage
-  const saveClientInfo = () => {
+  const saveClientInfo = (info = clientInfo) => {
     // This uses clientInfo state to save or process the collected information
-    console.log('Client information collected:', clientInfo);
+    console.log('Client information collected:', info);
     
     // Here you would typically send this data to your backend
     // Example: axios.post('/api/lead', clientInfo);
     
     // For now, let's store it in localStorage as an example
-    localStorage.setItem('latestClientInfo', JSON.stringify(clientInfo));
+    localStorage.setItem('latestClientInfo', JSON.stringify(info));
   };
 
   // Theme-based style variables
@@ -735,6 +747,61 @@ const Hero = () => {
 
   // Current theme styling
   const ts = themeStyles[theme];
+
+  const stageOrder: Stage[] = [
+    'initial',
+    'service_selection',
+    'project_details',
+    'user_info',
+    'project_goals',
+    'project_nature',
+    'project_timeline',
+    'project_budget',
+    'country',
+    'inspiration',
+    'booking_prompt',
+    'booking',
+    'confirmed'
+  ];
+
+  const stageLabels: Record<Stage, string> = {
+    initial: 'Choose a service',
+    service_selection: 'Specify the service',
+    project_details: 'Project discussion',
+    user_info: 'Your details',
+    project_goals: 'Project goals',
+    project_nature: 'Project scope',
+    project_timeline: 'Timeline',
+    project_budget: 'Budget',
+    country: 'Location',
+    inspiration: 'Inspiration',
+    booking_prompt: 'Book a call',
+    booking: 'Select a slot',
+    confirmed: 'Confirmation'
+  };
+
+  const currentStepIndex = Math.max(0, stageOrder.indexOf(currentStage));
+  const totalSteps = stageOrder.length;
+  const progressPercent = Math.min(100, Math.round((currentStepIndex / (totalSteps - 1)) * 100));
+  const nextStepLabel = stageOrder[currentStepIndex + 1]
+    ? stageLabels[stageOrder[currentStepIndex + 1]]
+    : 'Complete';
+
+  const summaryItems = [
+    {
+      label: 'Service',
+      value: selectedService
+        ? serviceCategories[selectedService as keyof typeof serviceCategories].label
+        : 'Pending'
+    },
+    { label: 'Focus', value: selectedSubService ?? 'Pending' },
+    { label: 'Goals', value: clientInfo.projectGoals || 'Pending' },
+    { label: 'Scope', value: clientInfo.projectNature || 'Pending' },
+    { label: 'Timeline', value: clientInfo.timeline || 'Pending' },
+    { label: 'Budget', value: clientInfo.budget || 'Pending' },
+    { label: 'Location', value: clientInfo.country || 'Pending' },
+    { label: 'Inspiration', value: clientInfo.inspirationLinks ? 'Provided' : 'Pending' }
+  ];
 
   // Add effect for horizontal scroll touch handling
   useEffect(() => {
@@ -827,24 +894,28 @@ const Hero = () => {
         processUserInfo();
         break;
       case 'projectGoals':
-        // Save project goals and proceed to project nature
-        setClientInfo(prev => ({ ...prev, projectGoals: textInputValue }));
-        processProjectNature();
+        processProjectGoalsInput();
         break;
       case 'projectNature':
-        processProjectNature();
+        processProjectNatureInput();
+        break;
+      case 'timeline':
+        processTimelineInput();
+        break;
+      case 'budget':
+        processBudgetInput();
         break;
       case 'country':
-        processCountry();
+        processCountryInput();
         break;
       case 'inspirationLinks':
-        processInspiration();
+        processInspirationInput();
         break;
     }
   };
 
   return (
-    <section className={`w-full h-screen flex items-center justify-center px-4 md:px-8 lg:px-12 relative ${ts.bgGradient} overflow-hidden`}>
+    <section className={`w-full min-h-screen flex items-center justify-center px-4 md:px-8 lg:px-12 relative ${ts.bgGradient} overflow-hidden pt-24 pb-36 md:pb-20`}>
       {/* Add burning cursor style and mobile scrollbar styling */}
       <style jsx global>{`
         @keyframes cursor-flame {
@@ -927,7 +998,7 @@ const Hero = () => {
         {/* Main content area with fixed card heights */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
           {/* Left panel */}
-          <div className={`${ts.panelBg} rounded-xl p-3 md:p-4 ${ts.panelBorder} border min-h-[400px] md:h-[460px] flex flex-col relative overflow-hidden shadow-lg ${ts.shadow} ${isMobile ? 'md:block hidden' : ''}`}>
+          <div className={`${ts.panelBg} rounded-xl p-3 md:p-4 ${ts.panelBorder} border min-h-[320px] md:h-[460px] flex flex-col relative overflow-hidden shadow-lg ${ts.shadow}`}>
             <div className="absolute inset-0 bg-gradient-radial from-white/5 to-transparent opacity-20" style={{ background: 'radial-gradient(circle at 50% 0%, rgba(255,255,255,0.05), transparent 70%)' }}></div>
             
             <div className={`flex items-center justify-between mb-3 pb-2 border-b ${ts.panelBorder}`}>
@@ -1023,6 +1094,7 @@ const Hero = () => {
                       // Reset conversation
                       setConversation([]);
                       setSelectedService(null);
+                      setSelectedSubService(null);
                       setClientInfo({
                         name: '',
                         email: '',
@@ -1030,13 +1102,15 @@ const Hero = () => {
                         country: '',
                         projectGoals: '',
                         projectNature: '',
+                        timeline: '',
+                        budget: '',
                         inspirationLinks: ''
                       });
                       setCurrentStage('initial');
                       startConversation();
                     }}
                   >
-                    {conversation.length === 0 ? "Connect with Omeru" : "Start Over"}
+                    {conversation.length === 0 ? "Start Project Planner" : "Restart Planner"}
                   </button>
                 )}
               </div>
@@ -1056,6 +1130,19 @@ const Hero = () => {
                 <div className={`w-1 h-1 ${ts.dotInactiveBg} rounded-full`}></div>
                 <div className={`w-1 h-1 ${ts.dotInactiveBg} rounded-full`}></div>
                 <div className={`w-1 h-1 ${ts.dotInactiveBg} rounded-full`}></div>
+              </div>
+            </div>
+
+            <div className="mb-3">
+              <div className="flex items-center justify-between text-xs">
+                <span className={`${ts.textSecondary}`}>Step {currentStepIndex + 1} of {totalSteps}</span>
+                <span className={`${ts.textTertiary}`}>Next: {nextStepLabel}</span>
+              </div>
+              <div className={`mt-2 h-1.5 ${theme === 'dark' ? 'bg-white/10' : 'bg-gray-200'} rounded-full overflow-hidden`}>
+                <div
+                  className={`h-full bg-gradient-to-r ${ts.timelineFill}`}
+                  style={{ width: `${progressPercent}%` }}
+                ></div>
               </div>
             </div>
             
@@ -1144,11 +1231,11 @@ const Hero = () => {
                         Welcome to Omeru Digital Assistant
                       </h3>
                       <p className={`${ts.textSecondary} text-xs mb-4`}>
-                        Click &ldquo;Connect with Omeru&ldquo; to start a conversation with our AI assistant. We&lsquo;ll help you explore our digital services and find the perfect solution for your needs.
+                        Click &ldquo;Start Project Planner&ldquo; to begin. We&lsquo;ll guide you through scoping, timeline, and budget so you can quickly reach booking.
                       </p>
                       <div className={`px-3 py-2 rounded-md ${ts.inputBg} ${ts.panelBorder} border inline-block`}>
                         <p className={`${ts.textSecondary} text-xs`}>
-                          Select a service or ask about our capabilities
+                          You can answer at your own pace
                         </p>
                       </div>
                     </div>
@@ -1177,53 +1264,43 @@ const Hero = () => {
               </div>
             </div>
             
-            <div className="relative z-10 h-full flex items-center justify-center overflow-y-auto">
-              {selectedService ? (
-                <div className="text-center py-4">
-                  <div className={`w-14 h-14 mx-auto rounded-full bg-gradient-to-br from-blue-600/10 to-indigo-600/5 flex items-center justify-center mb-4 ${ts.panelBorder} border`}>
-                    <div className={`w-6 h-6 ${ts.inputBg} rounded-md flex items-center justify-center`}>
-                      <span className="text-blue-400 text-xs font-medium">O</span>
-                    </div>
+            <div className="relative z-10 h-full flex flex-col overflow-y-auto">
+              <div className={`p-3 ${ts.headingBg} rounded-lg mb-4 ${ts.panelBorder} border`}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className={`${ts.textPrimary} text-sm font-medium`}>Project brief</p>
+                    <p className={`${ts.textSecondary} text-xs`}>Captured requirements</p>
                   </div>
-                  <p className={`${ts.textPrimary} font-medium text-base mb-2`}>
-                    {selectedService && serviceCategories[selectedService as keyof typeof serviceCategories].label}
-                  </p>
-                  <p className={`${ts.textSecondary} text-xs max-w-[220px] mx-auto opacity-80`}>
-                    Streamlined solutions designed to transform your business operations and enhance digital presence
-                  </p>
-                  
-                  <div className={`mt-5 ${ts.timelineBg} p-2.5 rounded-lg ${ts.panelBorder} border`}>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className={`${ts.textSecondary} text-xs`}>PROJECT TIMELINE</span>
-                      <span className="text-blue-400 text-xs">4-6 weeks</span>
-                    </div>
-                    <div className={`h-1 ${theme === 'dark' ? 'bg-white/10' : 'bg-gray-200'} rounded-full overflow-hidden`}>
-                      <div className={`h-full w-[75%] bg-gradient-to-r ${ts.timelineFill} rounded-full`}></div>
-                    </div>
-                  </div>
-                  
-                  <div className="mt-3 flex justify-center space-x-1.5">
-                    {[1, 2, 3].map((dot) => (
-                      <div 
-                        key={dot} 
-                        className={`w-1 h-1 rounded-full ${
-                          dot === 1 ? ts.dotActiveBg : ts.dotInactiveBg
-                        }`}
-                      ></div>
-                    ))}
-                  </div>
+                  <span className={`text-xs px-2 py-1 rounded-full ${ts.inputBg} ${ts.panelBorder} border`}>
+                    {progressPercent}% complete
+                  </span>
                 </div>
-              ) : (
-                <div className="text-center">
-                  <svg className={`w-12 h-12 mx-auto mb-4 ${theme === 'dark' ? 'text-white/10' : 'text-gray-300'}`} viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <path d="M9 12H15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M12 9L12 15" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                    <path d="M3 12C3 4.5885 4.5885 3 12 3C19.4115 3 21 4.5885 21 12C21 19.4115 19.4115 21 12 21C4.5885 21 3 19.4115 3 12Z" stroke="currentColor" strokeWidth="1.5"/>
-                  </svg>
-                  <p className={`${ts.textTertiary} text-xs`}>Select a service to view details</p>
-                  <p className={`${theme === 'dark' ? 'text-white/30' : 'text-gray-400'} text-xs mt-1 opacity-70`}>Information will appear here</p>
+                <div className={`mt-3 h-1.5 ${theme === 'dark' ? 'bg-white/10' : 'bg-gray-200'} rounded-full overflow-hidden`}>
+                  <div
+                    className={`h-full bg-gradient-to-r ${ts.timelineFill}`}
+                    style={{ width: `${progressPercent}%` }}
+                  ></div>
                 </div>
-              )}
+              </div>
+
+              <div className="space-y-3">
+                {summaryItems.map((item) => (
+                  <div key={item.label} className={`p-2.5 rounded-lg ${ts.inputBg} ${ts.panelBorder} border`}>
+                    <p className={`${ts.textTertiary} text-[11px] uppercase tracking-wide`}>{item.label}</p>
+                    <p className={`${ts.textPrimary} text-xs mt-1 break-words`}>
+                      {item.value}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              <div className={`mt-4 p-3 rounded-lg ${ts.timelineBg} ${ts.panelBorder} border`}>
+                <p className={`${ts.textSecondary} text-xs`}>Next step</p>
+                <p className={`${ts.textPrimary} text-sm font-medium mt-1`}>{nextStepLabel}</p>
+                <p className={`${ts.textTertiary} text-xs mt-2`}>
+                  Keep answering to build a scoped plan and reach scheduling.
+                </p>
+              </div>
             </div>
           </div>
         </div>
@@ -1248,7 +1325,7 @@ const Hero = () => {
       
       {/* Mobile options UI fixed at bottom */}
       {isMobile && (showOptions || showTextInput) && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 w-full">
+        <div className="fixed bottom-0 left-0 right-0 z-50 w-full pb-[env(safe-area-inset-bottom)]">
           {/* Current question display */}
           <div className={`${ts.panelBg} p-2 ${ts.panelBorder} border-t border-x w-full ${ts.textPrimary} text-center font-medium text-xs shadow-md ${ts.shadow}`}>
             {currentQuestion}
