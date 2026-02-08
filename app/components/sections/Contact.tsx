@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { 
@@ -80,12 +81,12 @@ const Contact = () => {
           </p>
           <div className="mt-8 inline-flex flex-col sm:flex-row items-center gap-3 px-4 py-3 bg-white/5 border border-white/10 rounded-full text-white/70 text-sm">
             <span>Prefer a guided project plan first? Start with the assistant above.</span>
-            <a
+            <Link
               href="/#"
               className="px-4 py-2 rounded-full bg-blue-500 hover:bg-blue-600 text-white text-xs font-medium transition-all"
             >
               Start Planning
-            </a>
+            </Link>
           </div>
         </div>
         
